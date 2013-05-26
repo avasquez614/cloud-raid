@@ -10,10 +10,10 @@ import net.jxta.protocol.PeerGroupAdvertisement;
 import org.apache.log4j.Logger;
 import org.jigdfs.baseInterface.Listenable;
 import org.jigdfs.jxta.utils.PeerGroupUtil;
-import org.jigdfs.serivce.Service;
-import org.jigdfs.serivce.ServiceEvent;
-import org.jigdfs.serivce.ServiceListener;
-import org.jigdfs.serivce.ServiceResponseMsg;
+import org.jigdfs.service.Service;
+import org.jigdfs.service.ServiceEvent;
+import org.jigdfs.service.ServiceListener;
+import org.jigdfs.service.ServiceResponseMsg;
 
 import java.io.IOException;
 import java.util.*;

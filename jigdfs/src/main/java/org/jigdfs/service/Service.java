@@ -1,4 +1,4 @@
-package org.jigdfs.serivce;
+package org.jigdfs.service;
 
 /**
  * Service base class

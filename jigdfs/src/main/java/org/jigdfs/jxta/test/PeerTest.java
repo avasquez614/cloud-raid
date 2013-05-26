@@ -6,8 +6,8 @@ import org.apache.log4j.Logger;
 import org.jigdfs.jxta.core.JigDFSPeerNode;
 import org.jigdfs.jxta.exception.JXTAInvalidParametersException;
 import org.jigdfs.jxta.service.PeerGroupSearchService;
-import org.jigdfs.serivce.ServiceEvent;
-import org.jigdfs.serivce.ServiceListener;
+import org.jigdfs.service.ServiceEvent;
+import org.jigdfs.service.ServiceListener;
 
 import java.io.IOException;
 

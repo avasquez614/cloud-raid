@@ -3,7 +3,7 @@ package org.jigdfs.jxta.wrapper;
 import org.jigdfs.baseInterface.Listenable;
 import org.jigdfs.baseInterface.Listener;
 import org.jigdfs.jxta.exception.JXTANotInitializedException;
-import org.jigdfs.serivce.Service;
+import org.jigdfs.service.Service;
 
 import java.util.ArrayList;
 import java.util.EventObject;
