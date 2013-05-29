@@ -33,7 +33,7 @@
         <dependency>
             <groupId>org.alfresco</groupId>
             <artifactId>alfresco-jlan-full</artifactId>
-            <version>4.2.c</version>
+            <version>${alfresco.version}</version>
         </dependency>
     </dependencies>
 
