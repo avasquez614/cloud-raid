@@ -1,0 +1,4 @@
+POSSIBLE FUTURE FEATURES:
+=========================
+
+* Clean up orphaned IDA file fragments.
