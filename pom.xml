@@ -44,13 +44,6 @@
         <alfresco.version>4.2.c</alfresco.version>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>alfresco-public</id>
-            <url>https://artifacts.alfresco.com/nexus/content/groups/public</url>
-        </repository>
-    </repositories>
-
     <build>
         <plugins>
             <plugin>

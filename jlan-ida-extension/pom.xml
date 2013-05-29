@@ -14,5 +14,27 @@
     <artifactId>jlan-ida-extension</artifactId>
     <name>JLan IDA Extension</name>
 
+    <repositories>
+        <repository>
+            <id>lib</id>
+            <name>lib</name>
+            <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>ignore</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <url>file://${project.basedir}/lib</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.alfresco</groupId>
+            <artifactId>alfresco-jlan-full</artifactId>
+            <version>4.2.c</version>
+        </dependency>
+    </dependencies>
 
 </project>
