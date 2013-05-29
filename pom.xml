@@ -7,14 +7,14 @@
 
     <groupId>cloud-raid</groupId>
     <artifactId>cloud-raid</artifactId>
-    <name>CloudRAID</name>
+    <name>Cloud RAID</name>
     <description>CIFS/NFS/FTP server for secure distributed storage in the cloud by IDAs (Information Distribution Algorithms)</description>
     <packaging>pom</packaging>
     <version>1.0.0-SNAPSHOT</version>
 
     <modules>
         <module>jigdfs</module>
-        <module>jlan-ida-extension</module>
+        <module>cloud-raid-jlan-extension</module>
     </modules>
 
     <licenses>
