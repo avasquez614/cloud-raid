@@ -14,7 +14,7 @@
 
     <modules>
         <module>jigdfs</module>
-        <module>cloud-raid-jlan-extension</module>
+        <module>jlan-extension</module>
     </modules>
 
     <licenses>

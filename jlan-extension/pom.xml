@@ -11,7 +11,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>cloud-raid-jlan-extension</artifactId>
+    <artifactId>jlan-extension</artifactId>
     <name>Cloud RAID JLan Extension</name>
 
     <repositories>
@@ -28,6 +28,10 @@
             <url>file://${project.basedir}/lib</url>
         </repository>
     </repositories>
+
+    <build>
+        <finalName>cloud-raid-jlan-extension-${project.version}</finalName>
+    </build>
 
     <dependencies>
         <dependency>
