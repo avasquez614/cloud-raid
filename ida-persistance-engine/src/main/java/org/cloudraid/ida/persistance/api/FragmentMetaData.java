@@ -1,29 +1,29 @@
 package org.cloudraid.ida.persistance.api;
 
 /**
- * The fragment information, stored in a {@link FragmentRegistry} to be used for later fragment retrieval.
+ * The fragment metadata, stored in a {@link FragmentMetaDataRepository} to be used for later fragment retrieval.
  *
  * @author avasquez
  */
-public class FragmentInfo {
+public class FragmentMetaData {
 
     private String dataId;
     private int fragmentNumber;
     private String repositoryUrl;
 
-    public FragmentInfo(String dataId, String repositoryUrl) {
+    public FragmentMetaData(String dataId, String repositoryUrl) {
         this.dataId = dataId;
         this.repositoryUrl = repositoryUrl;
     }
 
-    public FragmentInfo(String dataId, int fragmentNumber, String repositoryUrl) {
+    public FragmentMetaData(String dataId, int fragmentNumber, String repositoryUrl) {
         this.dataId = dataId;
         this.fragmentNumber = fragmentNumber;
         this.repositoryUrl = repositoryUrl;
     }
 
     /**
-     * Returns the complete data (unfragmented) identifier.
+     * Returns the data from where this fragment was obtained.
      */
     public String getDataId() {
         return dataId;
@@ -37,7 +37,7 @@ public class FragmentInfo {
     }
 
     /**
-     * Returns the fragment repository URL.
+     * Returns the repository URL where the fragment is stored.
      */
     public String getRepositoryUrl() {
         return repositoryUrl;

@@ -18,6 +18,11 @@ public interface FragmentRepository {
     void setRepositoryUrl(String repositoryUrl);
 
     /**
+     * Sets the repository for fragment metadata.
+     */
+    void setFragmentMetaDataRepository(FragmentMetaDataRepository metaDataRepository);
+
+    /**
      * Stores the given IDA fragment at the given URL in the repository.
      *
      * @param url
