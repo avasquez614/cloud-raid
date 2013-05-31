@@ -5,6 +5,8 @@ import java.util.List;
 /**
  * Represents an actual information dispersal algorithm, which splits data into N fragments, and can
  * reconstruct said data from M fragments (where N >= M and N and M are configurable).
+ *
+ * @author avasquez
  */
 public interface InformationDispersalAlgorithm {
 

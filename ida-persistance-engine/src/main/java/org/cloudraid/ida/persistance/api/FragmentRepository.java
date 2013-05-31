@@ -8,6 +8,11 @@ package org.cloudraid.ida.persistance.api;
 public interface FragmentRepository {
 
     /**
+     * Returns the URL of this repository.
+     */
+    String getRepositoryUrl();
+
+    /**
      * Sets the URL for this repository.
      */
     void setRepositoryUrl(String repositoryUrl);

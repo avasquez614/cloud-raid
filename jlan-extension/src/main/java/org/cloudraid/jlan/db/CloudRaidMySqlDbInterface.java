@@ -286,8 +286,8 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
 
                 stmt.execute(
                         "CREATE TABLE " + getIdaFileFragmentsTableName() +
-                        " (ObjectId VARCHAR(255) NOT NULL, FragmentId INTEGER AUTO_INCREMENT, " +
-                        "FragmentRepositoryUrl VARCHAR(2000), PRIMARY KEY (ObjectId, FragmentId));"
+                        " (ObjectId VARCHAR(255) NOT NULL, FragmentNumber INTEGER AUTO_INCREMENT, " +
+                        "FragmentRepositoryUrl VARCHAR(2000), PRIMARY KEY (ObjectId, FragmentNumber));"
                 );
 
                 stmt.execute("ALTER TABLE " + getIdaFileFragmentsTableName() + " ADD INDEX IObjectId (ObjectId);");
