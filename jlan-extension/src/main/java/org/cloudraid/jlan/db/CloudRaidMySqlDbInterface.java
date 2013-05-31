@@ -12,9 +12,9 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 /**
- * Extends {@link MySQLDBInterface} to add a table for IDA file fragments.
+ * Extends {@link MySQLDBInterface} to add a table for IDA file fragment records.
  *
- * @author Alfonso Vasquez
+ * @author avasquez
  */
 public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
 
@@ -22,6 +22,14 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
 
     protected String idaFileFragmentsTableName;
 
+    /**
+     * Just like {@link MySQLDBInterface#initializeDatabase(org.alfresco.jlan.server.filesys.db.DBDeviceContext,
+     * org.springframework.extensions.config.ConfigElement)}, but also adds a table for IDA file fragment records.
+     *
+     * @param dbCtx
+     * @param params
+     * @throws InvalidConfigurationException
+     */
     @Override
     public void initializeDatabase(DBDeviceContext dbCtx, ConfigElement params) throws InvalidConfigurationException {
         // Set the JDBC driver class, must be set before the connection pool is created
@@ -69,7 +77,7 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
             boolean foundJarData = false;
             boolean foundObjId = false;
             boolean foundSymLink = false;
-            boolean foundIdaFragments = false;
+            boolean foundIdaFileFragments = false;
 
             while (rs.next()) {
                 // Get the table name
@@ -95,8 +103,9 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
                 else if (hasSymLinksTableName() && tblName.equalsIgnoreCase(getSymLinksTableName()))
                     foundSymLink = true;
                 else if (tblName.equalsIgnoreCase(getIdaFileFragmentsTableName()))
-                    foundIdaFragments = true;
+                    foundIdaFileFragments = true;
             }
+
             // Check if the file system structure table should be created
             if (foundStruct == false) {
                 // Create the file system structure table
@@ -152,6 +161,7 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
                         " (FileId INTEGER NOT NULL, StartDate TIMESTAMP, EndDate TIMESTAMP, " +
                         "PurgeFlag TINYINT(1), PRIMARY KEY (FileId));"
                 );
+
                 stmt.close();
 
                 // DEBUG
@@ -165,9 +175,9 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
 
                 stmt.execute(
                         "CREATE TABLE " + getQueueTableName() +
-                                " (FileId INTEGER NOT NULL, StreamId INTEGER NOT NULL, ReqType SMALLINT, " +
-                                "SeqNo INTEGER AUTO_INCREMENT, TempFile TEXT, VirtualPath TEXT, QueuedAt TIMESTAMP, " +
-                                "Attribs VARCHAR(512), PRIMARY KEY (SeqNo));"
+                        " (FileId INTEGER NOT NULL, StreamId INTEGER NOT NULL, ReqType SMALLINT, " +
+                        "SeqNo INTEGER AUTO_INCREMENT, TempFile TEXT, VirtualPath TEXT, QueuedAt TIMESTAMP, " +
+                        "Attribs VARCHAR(512), PRIMARY KEY (SeqNo));"
                 );
 
                 stmt.execute("ALTER TABLE " + getQueueTableName() + " ADD INDEX IFileId (FileId);");
@@ -270,17 +280,17 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
                     Debug.println("[mySQL] Created table " + getSymLinksTableName());
             }
             // Check if the IDA file fragments table should be created
-            if (foundIdaFragments == false && hasIdaFileFragmentsTableName()) {
+            if (foundIdaFileFragments == false && hasIdaFileFragmentsTableName()) {
                 // Create the IDA file fragments table
                 Statement stmt = conn.createStatement();
 
                 stmt.execute(
                         "CREATE TABLE " + getIdaFileFragmentsTableName() +
                         " (ObjectId VARCHAR(255) NOT NULL, FragmentId INTEGER AUTO_INCREMENT, " +
-                        "CloudNodeUrl VARCHAR(2000), PRIMARY KEY (ObjectId, FragmentId));"
+                        "FragmentRepositoryUrl VARCHAR(2000), PRIMARY KEY (ObjectId, FragmentId));"
                 );
 
-                stmt.execute("ALTER TABLE " + getDataTableName() + " ADD INDEX IObjectId (ObjectId);");
+                stmt.execute("ALTER TABLE " + getIdaFileFragmentsTableName() + " ADD INDEX IObjectId (ObjectId);");
 
                 // DEBUG
                 if (Debug.EnableInfo && hasDebug())
@@ -309,6 +319,12 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
         return idaFileFragmentsTableName != null;
     }
 
+    /**
+     * Configures the current object properties according to the params.
+     *
+     * @param params
+     * @throws InvalidConfigurationException
+     */
     protected void configure(ConfigElement params) throws InvalidConfigurationException {
         ConfigElement configElement = params.getChild("IdaFileFragmentsTable");
         if (configElement != null) {
