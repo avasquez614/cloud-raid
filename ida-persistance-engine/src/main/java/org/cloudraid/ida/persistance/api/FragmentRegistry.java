@@ -11,7 +11,7 @@ public interface FragmentRegistry {
 
     void saveFragmentInfo(FragmentInfo info);
 
-    List<FragmentInfo> getFragmentsInfoForData(String dataId);
+    List<FragmentInfo> getFragmentsInfo(String dataId);
 
     FragmentInfo getFragmentInfo(String dataId, String fragmentNumber);
 
