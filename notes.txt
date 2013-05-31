@@ -1,4 +1,5 @@
 POSSIBLE FUTURE FEATURES:
 =========================
 
-* Clean up orphaned IDA file fragments.
+* Sync database and remote cloud repos to delete orphaned fragments.
+* Versioning.
