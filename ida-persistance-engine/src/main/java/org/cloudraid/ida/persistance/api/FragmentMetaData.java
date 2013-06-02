@@ -11,11 +11,6 @@ public class FragmentMetaData {
     private int fragmentNumber;
     private String repositoryUrl;
 
-    public FragmentMetaData(String dataId, String repositoryUrl) {
-        this.dataId = dataId;
-        this.repositoryUrl = repositoryUrl;
-    }
-
     public FragmentMetaData(String dataId, int fragmentNumber, String repositoryUrl) {
         this.dataId = dataId;
         this.fragmentNumber = fragmentNumber;
@@ -41,6 +36,15 @@ public class FragmentMetaData {
      */
     public String getRepositoryUrl() {
         return repositoryUrl;
+    }
+
+    @Override
+    public String toString() {
+        return "FragmentMetaData[" +
+                "dataId='" + dataId + '\'' +
+                ", fragmentNumber=" + fragmentNumber +
+                ", repositoryUrl='" + repositoryUrl + '\'' +
+                ']';
     }
 
 }

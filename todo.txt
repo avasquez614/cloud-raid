@@ -1,0 +1,7 @@
+TODO:
+=====
+
+* Add a delete to ObjectIdFileLoader.
+* Use FragmentRepositories in a least-used basis.
+* Sync database and remote cloud repos to delete orphaned fragments.
+* Add versioning (need to investigate on this).

@@ -1,5 +1,0 @@
-POSSIBLE FUTURE FEATURES:
-=========================
-
-* Sync database and remote cloud repos to delete orphaned fragments.
-* Versioning.

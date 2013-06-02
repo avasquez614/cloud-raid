@@ -1,6 +1,9 @@
 package org.cloudraid.ida.persistance.api;
 
-import java.util.Collection;
+import org.cloudraid.ida.persistance.exception.IdaPersistanceException;
+
+import java.io.File;
+import java.util.List;
 
 /**
  * Service for persisting files through IDAs.
@@ -12,12 +15,27 @@ public interface InformationDispersalPersistanceService {
     /**
      * Sets the the repositories to use to store the fragments. Each fragment will be stored in a different repository.
      */
-    void setFragmentRepositories(Collection<FragmentRepository> repositories);
+    void setFragmentRepositories(List<FragmentRepository> repositories);
+
+    /**
+     * Sets the repository for fragment metadata.
+     */
+    void setFragmentMetaDataRepository(FragmentMetaDataRepository metaDataRepository);
 
     /**
      * Sets the IDA to use for fragmenting data.
      */
     void setInformationDispersalAlgorithm(InformationDispersalAlgorithm ida);
+
+    /**
+     * Sets the directory to temporary keep the fragments while they're been saved.
+     */
+    void setTemporaryFragmentDirectory(File directory);
+
+    /**
+     * Initializes the service.
+     */
+    void init();
 
     /**
      * Stores the given data across several fragment repository through an IDA.
@@ -27,7 +45,7 @@ public interface InformationDispersalPersistanceService {
      * @param data
      *          the data to store
      */
-    void storeData(String id, byte[] data);
+    void saveData(String id, byte[] data) throws IdaPersistanceException;
 
     /**
      * Loads the data, which is recombined from the fragments of several repositories.
@@ -36,6 +54,6 @@ public interface InformationDispersalPersistanceService {
      *          the ID used to identify the data in all repositories
      * @return the loaded data
      */
-    byte[] loadData(Collection<FragmentRepository> repositories, String id);
+    byte[] loadData(String id) throws IdaPersistanceException;
 
 }
