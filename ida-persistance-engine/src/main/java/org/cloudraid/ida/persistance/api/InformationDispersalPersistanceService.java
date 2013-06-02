@@ -30,12 +30,12 @@ public interface InformationDispersalPersistanceService {
     /**
      * Sets the directory to temporary keep the fragments while they're been saved.
      */
-    void setTemporaryFragmentDirectory(File directory);
+    void setTemporaryFragmentDir(File directory);
 
     /**
      * Initializes the service.
      */
-    void init();
+    void init() throws IdaPersistanceException;
 
     /**
      * Stores the given data across several fragment repository through an IDA.

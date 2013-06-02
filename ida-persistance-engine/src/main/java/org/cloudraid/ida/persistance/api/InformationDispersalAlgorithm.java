@@ -35,6 +35,11 @@ public interface InformationDispersalAlgorithm {
     int getRedundantFragmentNumber();
 
     /**
+     * Initializes the algorithm.
+     */
+    void init() throws IdaException;
+
+    /**
      * Splits the given data into {@code numberOfFragments}.
      *
      * @param data

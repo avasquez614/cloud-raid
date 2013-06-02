@@ -1,11 +1,16 @@
 package org.cloudraid.ida.persistance.impl;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
 import org.cloudraid.ida.persistance.api.*;
 import org.cloudraid.ida.persistance.exception.IdaPersistanceException;
 import org.cloudraid.ida.persistance.exception.RepositoryException;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,7 +34,7 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
     protected List<FragmentRepository> repositories;
     protected FragmentMetaDataRepository metaDataRepository;
     protected InformationDispersalAlgorithm ida;
-    protected File temporaryFragmentDirectory;
+    protected File temporaryFragmentDir;
     protected Executor taskExecutor;
 
     @Override
@@ -48,8 +53,8 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
     }
 
     @Override
-    public void setTemporaryFragmentDirectory(File directory) {
-        this.temporaryFragmentDirectory = directory;
+    public void setTemporaryFragmentDir(File directory) {
+        this.temporaryFragmentDir = directory;
     }
 
     @Override
@@ -67,26 +72,22 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
      */
     @Override
     public void saveData(String id, byte[] data) throws IdaPersistanceException {
-        List<byte[]> fragments;
-        try {
-            fragments = ida.split(data);
-        } catch (Exception e) {
-            throw new IdaPersistanceException("Error while trying to split the data", e);
-        }
-
+        List<FragmentMetaData> savedFragmentsMetaData = metaDataRepository.getAllFragmentMetaDataForData(id);
         CompletionService<Boolean> saveCompletionService = new ExecutorCompletionService<Boolean>(taskExecutor);
+        int savedNum = 0;
+        List<FragmentSaveTask> saveTasks;
 
-        for (int i = 0; i < fragments.size(); i++) {
-            byte[] fragment = fragments.get(i);
-            FragmentRepository repository = repositories.get(i);
-            FragmentMetaData metaData = new FragmentMetaData(id, i, repository.getRepositoryUrl());
-
-            saveCompletionService.submit(new FragmentSaveTask(fragment, metaData, repository, metaDataRepository));
+        if (CollectionUtils.isNotEmpty(savedFragmentsMetaData)) {
+            saveTasks = getPendingFragmentSaveTasks(id, savedFragmentsMetaData);
+        } else {
+            saveTasks = getAllFragmentSaveTasks(id, data);
         }
 
-        int savedNum = 0;
+        for (FragmentSaveTask task : saveTasks) {
+            saveCompletionService.submit(task);
+        }
 
-        for (int i = 0; i < fragments.size(); i++) {
+        for (int i = 0; i < saveTasks.size(); i++) {
             boolean saved;
             try {
                 saved = saveCompletionService.take().get();
@@ -98,9 +99,9 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
             }
         }
 
-        // TODO: Try to save on the background the fragments that couldn't be saved, only if the total of required fragments
-        // to restore the data were successfully saved.
-        if (savedNum < fragments.size()) {
+        // TODO: Try to save on the background the fragments that couldn't be saved, only if the total of required
+        // fragments to restore the data were successfully saved.
+        if (savedNum < saveTasks.size()) {
             throw new IdaPersistanceException("Some fragments couldn't be saved");
         }
     }
@@ -114,9 +115,9 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
      */
     @Override
     public byte[] loadData(String id) throws IdaPersistanceException {
-        List<FragmentMetaData> allMetaData;
+        List<FragmentMetaData> fragmentsMetaData;
         try {
-            allMetaData = metaDataRepository.getAllFragmentMetaDataForData(id);
+            fragmentsMetaData = metaDataRepository.getAllFragmentMetaDataForData(id);
         } catch (RepositoryException e) {
             throw new IdaPersistanceException("Error while trying to retrieve all fragment metadata for the data", e);
         }
@@ -126,7 +127,7 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
         CompletionService<byte[]> loadCompletionService = new ExecutorCompletionService<byte[]>(taskExecutor);
 
         // Don't immediately submit the task: we want to make sure all repository URLs in the metadata are correct.
-        for (FragmentMetaData metaData : allMetaData) {
+        for (FragmentMetaData metaData : fragmentsMetaData) {
             FragmentRepository repository = getRepositoryForMetaData(metaData);
             if (repository == null) {
                 throw new IdaPersistanceException("No repository found for URL [" + metaData.getRepositoryUrl() + "]");
@@ -177,6 +178,122 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
         } else {
             throw new IdaPersistanceException("Not enough fragments could be retrieved to rebuild the data");
         }
+    }
+
+    /**
+     * Returns the save tasks for all fragments obtained through IDA, when there hasn't been a previous save operation. It
+     * also saves the fragments to temporary files in case the save operation fails, so it can be resumed on a next call.
+     */
+    protected List<FragmentSaveTask> getAllFragmentSaveTasks(String dataId, byte[] data) throws IdaPersistanceException {
+        List<byte[]> fragments;
+        try {
+            fragments = ida.split(data);
+        } catch (Exception e) {
+            throw new IdaPersistanceException("Error while trying to split the data", e);
+        }
+
+        File unsavedFragmentsTempDir = new File(temporaryFragmentDir, dataId);
+        List<FragmentSaveTask> saveTasks = new ArrayList<FragmentSaveTask>(fragments.size());
+
+        for (int i = 0; i < fragments.size(); i++) {
+            byte[] fragment = fragments.get(i);
+            FragmentRepository repository = repositories.get(i);
+            FragmentMetaData metaData = new FragmentMetaData(dataId, i, repository.getRepositoryUrl());
+
+            File tempFile = new File(unsavedFragmentsTempDir, i + "." + FRAGMENT_FILE_EXT);
+            try {
+                FileUtils.writeByteArrayToFile(tempFile, fragment);
+            } catch (IOException e) {
+                throw new IdaPersistanceException("Unable to write fragment to temp file " + tempFile, e);
+            }
+
+            saveTasks.add(new FragmentSaveTask(fragment, tempFile, metaData, repository, metaDataRepository));
+        }
+
+        return saveTasks;
+    }
+
+    /**
+     * Returns the save tasks for unsaved fragments of a previous save operation.
+     */
+    protected List<FragmentSaveTask> getPendingFragmentSaveTasks(String dataId, List<FragmentMetaData> savedFragmentsMetaData)
+            throws IdaPersistanceException {
+        File unsavedFragmentsTempDir = new File(temporaryFragmentDir, dataId);
+
+        if (unsavedFragmentsTempDir.exists()) {
+            File[] fragmentFiles = unsavedFragmentsTempDir.listFiles();
+
+            if (ArrayUtils.isNotEmpty(fragmentFiles)) {
+                List<FragmentRepository> unusedRepositories = getUnusedFragmentRepositories(savedFragmentsMetaData);
+                List<FragmentSaveTask> saveTasks = new ArrayList<FragmentSaveTask>(fragmentFiles.length);
+
+                for (int i = 0; i < fragmentFiles.length; i++) {
+                    File tempFile = fragmentFiles[i];
+                    int fragmentNumber = Integer.parseInt(FilenameUtils.getBaseName(tempFile.getName()));
+
+                    // Check if the fragment has actually been saved. This only happens if the fragment was saved but
+                    // the temp fragment file couldn't be deleted. In case it's saved, delete the temp file and don't
+                    // continue trying to save the file.
+                    if (isFragmentSaved(fragmentNumber, savedFragmentsMetaData)) {
+                        if (!tempFile.delete()) {
+                            throw new IdaPersistanceException("Unable to delete temporary fragment file " + tempFile);
+                        }
+                    } else {
+                        byte[] fragment;
+                        try {
+                            fragment = FileUtils.readFileToByteArray(tempFile);
+                        } catch (IOException e) {
+                            throw new IdaPersistanceException("Unable to read temporary fragment file " + tempFile);
+                        }
+
+                        FragmentRepository repository = unusedRepositories.get(i);
+                        String repositoryUrl = repository.getRepositoryUrl();
+                        FragmentMetaData metaData = new FragmentMetaData(dataId, fragmentNumber, repositoryUrl);
+
+                        saveTasks.add(new FragmentSaveTask(fragment, tempFile, metaData, repository, metaDataRepository));
+                    }
+                }
+
+                return saveTasks;
+            } else {
+                throw new IdaPersistanceException("There are unsaved fragments, but there are no files under the " +
+                        "temporary directory " + unsavedFragmentsTempDir + " where they should be");
+            }
+        } else {
+            throw new IdaPersistanceException("There are unsaved fragments, but the temporary directory where they " +
+                    "should be " + unsavedFragmentsTempDir + " doesn't exist");
+        }
+    }
+
+    protected List<FragmentRepository> getUnusedFragmentRepositories(List<FragmentMetaData> savedFragmentsMetaData) {
+        List<FragmentRepository> unusedRepositories = new ArrayList<FragmentRepository>();
+
+        for (FragmentRepository repository : repositories) {
+            boolean repositoryFound = false;
+
+            for (FragmentMetaData metaData : savedFragmentsMetaData) {
+                if (repository.getRepositoryUrl().equals(metaData.getRepositoryUrl())) {
+                    repositoryFound = true;
+                    break;
+                }
+            }
+
+            if (!repositoryFound) {
+                unusedRepositories.add(repository);
+            }
+        }
+
+        return unusedRepositories;
+    }
+
+    protected boolean isFragmentSaved(int fragmentNumber, List<FragmentMetaData> savedFragmentsMetaData) {
+        for (FragmentMetaData metaData : savedFragmentsMetaData) {
+            if (fragmentNumber == metaData.getFragmentNumber()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected FragmentRepository getRepositoryForMetaData(FragmentMetaData metaData) {

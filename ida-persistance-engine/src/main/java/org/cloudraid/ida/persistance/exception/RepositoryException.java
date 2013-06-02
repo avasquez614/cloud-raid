@@ -3,6 +3,8 @@ package org.cloudraid.ida.persistance.exception;
 /**
  * Exception used by {@link org.cloudraid.ida.persistance.api.FragmentRepository} and
  * {@link org.cloudraid.ida.persistance.api.FragmentMetaDataRepository} when an error occurs.
+ *
+ * @author avasquez
  */
 public class RepositoryException extends IdaPersistanceException {
 

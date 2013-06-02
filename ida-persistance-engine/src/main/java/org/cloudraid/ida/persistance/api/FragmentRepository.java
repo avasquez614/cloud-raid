@@ -16,12 +16,13 @@ public interface FragmentRepository {
 
     /**
      * Sets the URL for this repository.
-     *
-     * <p>The URL indicates the repository type and the root path. For example, if a repository URL is
-     * file://my/repo/path, it indicates that the repo is in the local filesystem and its root path is
-     * /my/repo/path.</p>
      */
     void setRepositoryUrl(String repositoryUrl);
+
+    /**
+     * Initializes the repository.
+     */
+    void init() throws RepositoryException;
 
     /**
      * Stores the given IDA fragment at the given URL in the repository.
