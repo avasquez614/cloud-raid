@@ -6,6 +6,8 @@ import org.cloudraid.ida.persistance.exception.RepositoryException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Implementation of {@link FragmentRepository} that uses a directory in the local filesystem to store the fragments.
@@ -27,7 +29,12 @@ public class FilesystemFragmentRepository implements FragmentRepository {
 
     @Override
     public void init() throws RepositoryException {
-        rootDir = new File(repositoryUrl);
+        try {
+            rootDir = new File(new URI(repositoryUrl));
+        } catch (URISyntaxException e) {
+            throw new RepositoryException("Invalid file URI " + repositoryUrl, e);
+        }
+
         if (!rootDir.exists()) {
             try {
                 FileUtils.forceMkdir(rootDir);

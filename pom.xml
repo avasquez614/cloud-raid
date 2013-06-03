@@ -14,8 +14,8 @@
 
     <modules>
         <module>jigdfs</module>
-        <module>jlan-extension</module>
         <module>ida-persistance-engine</module>
+        <module>jlan-extension</module>
     </modules>
 
     <licenses>

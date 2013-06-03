@@ -23,6 +23,11 @@ import java.util.concurrent.Executors;
 /**
  * Default implementation of the {@link InformationDispersalPersistanceService}.
  *
+ * <p>
+ *     <strong>WARN:</strong> This class is not thread-safe, for performance reasons (an instance of this object will
+ *     probably used in JLAN, which handles locking). So make sure classes that use it are thread-safe.
+ * </p>
+ *
  * @author avasquez
  */
 public class InformationDispersalPersistanceServiceImpl implements InformationDispersalPersistanceService {
@@ -72,7 +77,13 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
      */
     @Override
     public void saveData(String id, byte[] data) throws IdaPersistanceException {
-        List<FragmentMetaData> savedFragmentsMetaData = metaDataRepository.getAllFragmentMetaDataForData(id);
+        List<FragmentMetaData> savedFragmentsMetaData;
+        try {
+            savedFragmentsMetaData = metaDataRepository.getAllFragmentMetaDataForData(id);
+        } catch (Exception e) {
+            throw new IdaPersistanceException("Error while retrieving metadata for fragments of data '" + id + "'", e);
+        }
+
         CompletionService<Boolean> saveCompletionService = new ExecutorCompletionService<Boolean>(taskExecutor);
         int savedNum = 0;
         List<FragmentSaveTask> saveTasks;
@@ -243,7 +254,7 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
                         try {
                             fragment = FileUtils.readFileToByteArray(tempFile);
                         } catch (IOException e) {
-                            throw new IdaPersistanceException("Unable to read temporary fragment file " + tempFile);
+                            throw new IdaPersistanceException("Unable to read temporary fragment file " + tempFile, e);
                         }
 
                         FragmentRepository repository = unusedRepositories.get(i);

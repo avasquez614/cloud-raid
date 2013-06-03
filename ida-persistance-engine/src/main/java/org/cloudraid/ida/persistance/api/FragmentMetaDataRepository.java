@@ -20,15 +20,6 @@ public interface FragmentMetaDataRepository {
     void saveFragmentMetaData(FragmentMetaData metaData) throws RepositoryException;
 
     /**
-     * Updates the specified fragment metadata. The metadata should already exist in the repository, through a
-     * call to {@link #saveFragmentMetaData(FragmentMetaData)}.
-     *
-     * @param metaData
-     *          the metadata to update
-     */
-    void updateFragmentMetaData(FragmentMetaData metaData) throws RepositoryException;
-
-    /**
      * Returns the metadata of all fragments of a particular data.
      *
      * @param dataId
@@ -46,6 +37,6 @@ public interface FragmentMetaDataRepository {
      *          the fragment number
      * @return the fragment metadata
      */
-    FragmentMetaData getFragmentMetaData(String dataId, String fragmentNumber) throws RepositoryException;
+    FragmentMetaData getFragmentMetaData(String dataId, int fragmentNumber) throws RepositoryException;
 
 }

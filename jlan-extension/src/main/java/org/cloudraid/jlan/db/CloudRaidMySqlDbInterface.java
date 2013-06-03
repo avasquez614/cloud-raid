@@ -4,21 +4,23 @@ import org.alfresco.jlan.debug.Debug;
 import org.alfresco.jlan.server.config.InvalidConfigurationException;
 import org.alfresco.jlan.server.filesys.db.DBDeviceContext;
 import org.alfresco.jlan.server.filesys.db.mysql.MySQLDBInterface;
+import org.cloudraid.ida.persistance.api.FragmentMetaData;
+import org.cloudraid.ida.persistance.api.FragmentMetaDataRepository;
+import org.cloudraid.ida.persistance.exception.RepositoryException;
 import org.springframework.extensions.config.ConfigElement;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Extends {@link MySQLDBInterface} to add a table for IDA fragment records.
  *
  * @author avasquez
  */
-public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
+public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements FragmentMetaDataRepository {
 
-    public static final String IDA_FRAGMENTS_TABLE_NAME = "CloudRaidIdaFragments";
+    public static final String DEFAULT_IDA_FRAGMENTS_TABLE_NAME = "CloudRaidIdaFragments";
 
     protected String idaFragmentsTableName;
 
@@ -330,7 +332,142 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface {
         if (configElement != null) {
             idaFragmentsTableName = configElement.getValue();
         } else {
-            idaFragmentsTableName = IDA_FRAGMENTS_TABLE_NAME;
+            idaFragmentsTableName = DEFAULT_IDA_FRAGMENTS_TABLE_NAME;
+        }
+    }
+
+    /**
+     * Inserts the given {@link FragmentMetaData} into the database.
+     *
+     * @param metaData
+     *          the metaData to insert.
+     * @throws RepositoryException
+     */
+    @Override
+    public void saveFragmentMetaData(FragmentMetaData metaData) throws RepositoryException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(
+                    "INSERT INTO " + getIdaFragmentsTableName() +
+                    "VALUES (?, ?, ?)"
+            );
+
+            pstmt.setString(1, metaData.getDataId());
+            pstmt.setInt(2, metaData.getFragmentNumber());
+            pstmt.setString(3, metaData.getRepositoryUrl());
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("SQL error while trying to insert metadata record " + metaData, e);
+        } finally {
+            closeQuietly(pstmt);
+            closeQuietly(conn);
+        }
+    }
+
+    /**
+     * Selects the metadata for all fragments of the given data ID.
+     *
+     * @param dataId
+     *          the data ID
+     * @return the list of fragment metadata
+     * @throws RepositoryException
+     */
+    @Override
+    public List<FragmentMetaData> getAllFragmentMetaDataForData(String dataId) throws RepositoryException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        List<FragmentMetaData> fragmentsMetaData = new ArrayList<FragmentMetaData>();
+
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(
+                    "SELECT * " +
+                    "FROM " + getIdaFragmentsTableName() +
+                    "WHERE ObjectId = ?"
+            );
+
+            pstmt.setString(1, dataId);
+
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                fragmentsMetaData.add(mapFragmentMetaDataRow(rs));
+            }
+
+            return fragmentsMetaData;
+        } catch (SQLException e) {
+            throw new RepositoryException("SQL error while querying metadata for fragments of data ID '" + dataId + "'");
+        } finally {
+            closeQuietly(pstmt);
+            closeQuietly(conn);
+        }
+    }
+
+    /**
+     * Selects the single metadata record for the given data ID and fragment number.
+     *
+     * @param dataId
+     *          the data ID
+     * @param fragmentNumber
+     *          the fragment number
+     * @return the single metadata record
+     * @throws RepositoryException
+     */
+    @Override
+    public FragmentMetaData getFragmentMetaData(String dataId, int fragmentNumber) throws RepositoryException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        FragmentMetaData metaData = null;
+
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(
+                    "SELECT * " +
+                    "FROM " + getIdaFragmentsTableName() +
+                    "WHERE ObjectId = ? AND FragmentNumber = ?"
+            );
+
+            pstmt.setString(1, dataId);
+            pstmt.setInt(2, fragmentNumber);
+
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                metaData = mapFragmentMetaDataRow(rs);
+            }
+
+            return metaData;
+        } catch (SQLException e) {
+            throw new RepositoryException("SQL error while querying metadata for data ID '" + dataId + "' and fragment " +
+                    "number " + fragmentNumber);
+        } finally {
+            closeQuietly(pstmt);
+            closeQuietly(conn);
+        }
+    }
+
+    protected FragmentMetaData mapFragmentMetaDataRow(ResultSet rs) throws SQLException {
+        String dataId = rs.getString("ObjectId");
+        int fragmentNumber = rs.getInt("FragmentNumber");
+        String repositoryUrl = rs.getString("FragmentRepositoryUrl");
+
+        return new FragmentMetaData(dataId, fragmentNumber, repositoryUrl);
+    }
+
+    protected void closeQuietly(PreparedStatement pstmt) {
+        if (pstmt != null) {
+            try {
+                pstmt.close();
+            } catch (SQLException e) {
+            }
+        }
+    }
+
+    protected void closeQuietly(Connection conn) {
+        if (conn != null) {
+            releaseConnection(conn);
         }
     }
 

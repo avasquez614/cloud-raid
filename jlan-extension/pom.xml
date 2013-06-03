@@ -39,6 +39,11 @@
             <artifactId>alfresco-jlan-full</artifactId>
             <version>${alfresco.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ida-persistance-engine</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
