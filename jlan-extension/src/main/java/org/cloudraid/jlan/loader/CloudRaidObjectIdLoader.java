@@ -12,8 +12,6 @@ import org.cloudraid.ida.persistance.api.FragmentMetaDataRepository;
 import org.cloudraid.ida.persistance.api.FragmentRepository;
 import org.cloudraid.ida.persistance.api.InformationDispersalAlgorithm;
 import org.cloudraid.ida.persistance.api.InformationDispersalPersistanceService;
-import org.cloudraid.ida.persistance.exception.IdaException;
-import org.cloudraid.ida.persistance.exception.RepositoryException;
 import org.cloudraid.ida.persistance.impl.CrsInformationDispersalAlgorithm;
 import org.cloudraid.ida.persistance.impl.FilesystemFragmentRepository;
 import org.cloudraid.ida.persistance.impl.InformationDispersalPersistanceServiceImpl;
@@ -179,7 +177,7 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
                 repo.setRepositoryUrl(url);
                 try {
                     repo.init();
-                } catch (RepositoryException e) {
+                } catch (Exception e) {
                     throw new FileLoaderException("CloudRaidObjectIdLoader Failed to initialize " + repo + ": " +
                             e.getMessage());
                 }
@@ -268,7 +266,7 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
         ida.setRedundantFragmentNumber(redundantFragmentNum);
         try {
             ida.init();
-        } catch (IdaException e) {
+        } catch (Exception e) {
             throw new FileLoaderException("CloudRaidObjectIdLoader Failed to initialize " + ida + ": " + e.getMessage());
         }
 
