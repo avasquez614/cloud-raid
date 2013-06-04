@@ -5,9 +5,6 @@ import org.cloudraid.ida.persistance.api.FragmentRepository;
 import org.cloudraid.ida.persistance.exception.RepositoryException;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  * Implementation of {@link FragmentRepository} that uses a directory in the local filesystem to store the fragments.
@@ -29,17 +26,12 @@ public class FilesystemFragmentRepository implements FragmentRepository {
 
     @Override
     public void init() throws RepositoryException {
-        try {
-            rootDir = new File(new URI(repositoryUrl));
-        } catch (URISyntaxException e) {
-            throw new RepositoryException("Invalid file URI " + repositoryUrl, e);
-        }
-
+        rootDir = new File(repositoryUrl);
         if (!rootDir.exists()) {
             try {
                 FileUtils.forceMkdir(rootDir);
-            } catch (IOException e) {
-                throw new RepositoryException("Unable to create folder " + rootDir, e);
+            } catch (Exception e) {
+                throw new RepositoryException("Unable to create directory " + rootDir, e);
             }
         }
     }
@@ -50,7 +42,7 @@ public class FilesystemFragmentRepository implements FragmentRepository {
 
         try {
             FileUtils.writeByteArrayToFile(fragmentFile, fragment);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RepositoryException("Error while trying to write fragment to file " + fragmentFile, e);
         }
     }
@@ -61,7 +53,7 @@ public class FilesystemFragmentRepository implements FragmentRepository {
 
         try {
             return FileUtils.readFileToByteArray(fragmentFile);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RepositoryException("Error while trying to read fragment from file " + fragmentFile, e);
         }
     }

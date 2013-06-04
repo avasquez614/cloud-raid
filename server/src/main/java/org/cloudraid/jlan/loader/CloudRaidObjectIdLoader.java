@@ -126,44 +126,38 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
             throw new FileLoaderException("CloudRaidObjectIdLoader FragmentRepositories not specified");
         }
 
-        Map<String, Class<?>> schemeMappings = createDefaultSchemeMappings();
+        Map<String, Class<?>> repositoryTypes = createDefaultRepositoryTypes();
 
         List<ConfigElement> reposConfigChildren = informationDispersalConfig.getChildren();
         for (ConfigElement reposConfigChild : reposConfigChildren) {
-            if (reposConfigChild.getName().equals("SchemeMapping")) {
+            if (reposConfigChild.getName().equals("RepositoryType")) {
                 ConfigElement classConfig = reposConfigChild.getChild("Class");
-                ConfigElement schemeConfig = reposConfigChild.getChild("Scheme");
+                ConfigElement typeConfig = reposConfigChild.getChild("Type");
 
                 if (classConfig == null || StringUtils.isEmpty(classConfig.getValue())) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Class for SchemeMapping not specified or null");
+                    throw new FileLoaderException("CloudRaidObjectIdLoader Class for RepositoryType not specified or null");
                 }
-                if (schemeConfig == null || StringUtils.isEmpty(schemeConfig.getValue())) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Scheme for SchemeMapping not specified or null");
+                if (typeConfig == null || StringUtils.isEmpty(typeConfig.getValue())) {
+                    throw new FileLoaderException("CloudRaidObjectIdLoader Type for RepositoryType not specified or null");
                 }
                 
                 ClassLoader classLoader = getClass().getClassLoader();
 
                 try {
-                    schemeMappings.put(schemeConfig.getValue(), classLoader.loadClass(classConfig.getValue()));
+                    repositoryTypes.put(typeConfig.getValue(), classLoader.loadClass(classConfig.getValue()));
                 } catch (ClassNotFoundException e) {
                     throw new FileLoaderException("Failed to load class " + classConfig.getValue());
                 }
             } else if (reposConfigChild.getName().equals("Repository")) {
-                ConfigElement urlConfig = reposConfigChild.getChild("Url");
-                if (urlConfig == null || StringUtils.isEmpty(urlConfig.getValue())) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Url for Repository not specified or null");
+                String type = reposConfigChild.getAttribute("type");
+                if (StringUtils.isEmpty(type)) {
+                    throw new FileLoaderException("CloudRaidObjectIdLoader type for Repository not specified or null");
                 }
 
-                String url = urlConfig.getValue();
-                String scheme = StringUtils.substringBefore(url, ":");
-                if (StringUtils.isEmpty(scheme)) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Invalid Url '" + url + "': missing scheme");
-                }
-
-                Class<?> repoClass = schemeMappings.get(scheme);
+                Class<?> repoClass = repositoryTypes.get(type);
                 if (repoClass == null) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader No class mapped to scheme '" + scheme + "'. " +
-                            "Make sure SchemeMapping is defined before Repository");
+                    throw new FileLoaderException("CloudRaidObjectIdLoader Unrecognized repository type '" + type + "'. " +
+                            "Make sure the corresponding RepositoryType is defined before the Repository");
                 }
 
                 FragmentRepository repo;
@@ -174,7 +168,12 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
                             ": " + e.getMessage());
                 }
 
-                repo.setRepositoryUrl(url);
+                ConfigElement urlConfig = reposConfigChild.getChild("Url");
+                if (urlConfig == null || StringUtils.isEmpty(urlConfig.getValue())) {
+                    throw new FileLoaderException("CloudRaidObjectIdLoader Url for Repository not specified or null");
+                }
+
+                repo.setRepositoryUrl(urlConfig.getValue());
                 try {
                     repo.init();
                 } catch (Exception e) {
@@ -196,11 +195,11 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
         return repositories;
     }
 
-    protected Map<String, Class<?>> createDefaultSchemeMappings() {
-        Map<String, Class<?>> schemeMappings = new HashMap<String, Class<?>>();
-        schemeMappings.put("file", FilesystemFragmentRepository.class);
+    protected Map<String, Class<?>> createDefaultRepositoryTypes() {
+        Map<String, Class<?>> repositoryTypes = new HashMap<String, Class<?>>();
+        repositoryTypes.put("file", FilesystemFragmentRepository.class);
 
-        return schemeMappings;
+        return repositoryTypes;
     }
 
     protected File getTempFragmentDirFromConfig(ConfigElement informationDispersalConfig) throws FileLoaderException {
