@@ -1,12 +1,18 @@
-BUILDING SERVER
+Setting Up MySQL
+================
+
+1. Create cloudraid user: CREATE USER 'cloudraid'@'localhost' IDENTIFIED BY 'cloudraid';
+2. Create cloudraid database: CREATE DATABASE cloudraid;
+3. Grant permissions to user: GRANT ALL PRIVILEGES ON cloudraid.* TO 'cloudraid'@'localhost' WITH GRANT OPTION;
+
+Building Server
 ===============
 
 1. Run mvn clean install.
 2. Run ant build-server.
 
-STARTING SERVER (IN LINUX)
+Starting Server (In Linux)
 ==========================
 
-1. As root, create directory /var/cloud-raid.
 2. In PROJECT/build, run sudo ./runsrv.sh.
 
