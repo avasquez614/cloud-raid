@@ -84,7 +84,7 @@
                 <FileLoader>
                     <class>org.cloudraid.jlan.loader.CloudRaidObjectIdLoader</class>
                     <ThreadPoolSize>6:2</ThreadPoolSize>
-                    <TempDirectory>./tmp</TempDirectory>
+                    <TempDirectory>/var/cloud-raid/file-tmp</TempDirectory>
                     <MaximumFilesPerDirectory>1000</MaximumFilesPerDirectory>
 
                     <InformationDispersal>
@@ -95,19 +95,19 @@
                             </RepositoryType>
 
                             <Repository type="file">
-                                <Url>./frag-repos/test1</Url>
+                                <Url>/var/cloud-raid/frag-repos/test1</Url>
                             </Repository>
                             <Repository type="file">
-                                <Url>./frag-repos/test2</Url>
+                                <Url>/var/cloud-raid/frag-repos/test2</Url>
                             </Repository>
                             <Repository type="file">
-                                <Url>./frag-repos/test3</Url>
+                                <Url>/var/cloud-raid/frag-repos/test3</Url>
                             </Repository>
                             <Repository type="file">
-                                <Url>./frag-repos/test4</Url>
+                                <Url>/var/cloud-raid/frag-repos/test4</Url>
                             </Repository>
                             <Repository type="file">
-                                <Url>./frag-repos/test5</Url>
+                                <Url>/var/cloud-raid/frag-repos/test5</Url>
                             </Repository>
                         </FragmentRepositories>
 
@@ -116,7 +116,7 @@
                             <RedundantFragmentNum>2</RedundantFragmentNum>
                         </InformationDispersalAlgorithm>
 
-                        <TempFragmentDir>./frag-tmp</TempFragmentDir>
+                        <TempFragmentDir>/var/cloud-raid/frag-tmp</TempFragmentDir>
                     </InformationDispersal>
                 </FileLoader>
             </driver>

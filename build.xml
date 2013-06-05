@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="Cloud RAID Server" basedir="." default="build">
+<project name="Cloud RAID Server" basedir="." default="build-server">
 
-    <target name="build" description="Build Cloud RAID Server">
+    <target name="build-server" description="Build Cloud RAID Server">
         <delete dir="build"/>
         <mkdir dir="build"/>
 
