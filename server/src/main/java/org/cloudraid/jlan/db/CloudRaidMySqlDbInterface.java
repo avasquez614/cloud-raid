@@ -328,7 +328,7 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
      * @throws InvalidConfigurationException
      */
     protected void configure(ConfigElement params) throws InvalidConfigurationException {
-        ConfigElement configElement = params.getChild("IdaFileFragmentsTable");
+        ConfigElement configElement = params.getChild("IdaFragmentsTable");
         if (configElement != null) {
             idaFragmentsTableName = configElement.getValue();
         } else {

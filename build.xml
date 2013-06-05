@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Cloud RAID Server" basedir="." default="build">
+
+    <target name="build" description="Build Cloud RAID Server">
+        <delete dir="build"/>
+        <mkdir dir="build"/>
+
+        <copy todir="build" file="resources/runsrv.bat"/>
+        <copy todir="build" file="resources/runsrv.sh" />
+        <copy todir="build" file="resources/jlanConfig.xml"/>
+        <copy todir="build" file="resources/jlanserver.dtd"/>
+        <copy todir="build" file="resources/log4j.xml"/>
+
+        <copy todir="build/service">
+            <fileset dir="resources/service"/>
+        </copy>
+        <copy todir="build/jni">
+            <fileset dir="resources/jni"/>
+        </copy>
+        <copy todir="build/libs">
+            <fileset dir="resources/libs"/>
+        </copy>
+        <copy todir="build/hazelcast">
+            <fileset dir="resources/hazelcast"/>
+        </copy>
+        <copy todir="build/guides">
+            <fileset dir="resources/guides"/>
+        </copy>
+
+        <copy todir="build/jars" file="server/target/cloud-raid-server.jar"/>
+
+        <chmod file="build/runsrv.sh" perm="755"/>
+    </target>
+
+</project>

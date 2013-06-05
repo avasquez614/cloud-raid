@@ -128,7 +128,7 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
         Map<String, Class<?>> repositoryTypes = createDefaultRepositoryTypes();
 
-        List<ConfigElement> reposConfigChildren = informationDispersalConfig.getChildren();
+        List<ConfigElement> reposConfigChildren = reposConfig.getChildren();
         for (ConfigElement reposConfigChild : reposConfigChildren) {
             if (reposConfigChild.getName().equals("RepositoryType")) {
                 ConfigElement classConfig = reposConfigChild.getChild("Class");
@@ -229,8 +229,8 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
         ConfigElement idaConfig = informationDispersalConfig.getChild("InformationDispersalAlgorithm");
         if (idaConfig != null) {
-            ConfigElement classConfig = informationDispersalConfig.getChild("Class");
-            ConfigElement redundantFragmentNumConfig = informationDispersalConfig.getChild("RedundantFragmentNum");
+            ConfigElement classConfig = idaConfig.getChild("Class");
+            ConfigElement redundantFragmentNumConfig = idaConfig.getChild("RedundantFragmentNum");
 
             if (classConfig != null && StringUtils.isNotEmpty(classConfig.getValue())) {
                 ClassLoader classLoader = getClass().getClassLoader();

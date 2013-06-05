@@ -1,6 +1,9 @@
 # Maven
 target/
 
+# Ant
+build/
+
 # OS generated files #
 ######################
 .DS_Store

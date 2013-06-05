@@ -4,7 +4,7 @@
 <jlanserver>
     <servers>
         <!--SMB/-->
-        <FTP/>
+        <!--FTP/-->
         <NFS/>
     </servers>
 
@@ -53,8 +53,9 @@
 
     <debug>
         <output>
-            <class>org.alfresco.jlan.debug.ConsoleDebug</class>
-            <logFile>jlansrv.log</logFile>
+            <class>org.cloudraid.jlan.debug.Log4jLoggingDebug</class>
+            <logLevel>DEBUG</logLevel>
+            <logConfigXmlFile>./log4j.xml</logConfigXmlFile>
             <append/>
         </output>
     </debug>
@@ -71,42 +72,51 @@
                     <Username>cloudraid</Username>
                     <Password>cloudraid</Password>
                     <ConnectionPool>10:20</ConnectionPool>
+                    <FileSystemTable>FileSys</FileSystemTable>
+                    <StreamsTable>Streams</StreamsTable>
+                    <QueueTable>Queue</QueueTable>
+                    <TransactQueueTable>TransQueue</TransactQueueTable>
+                    <ObjectIdTable>ObjectId</ObjectIdTable>
+                    <SymLinksTable>SymLinks</SymLinksTable>
+                    <IdaFragmentsTable>IdaFragments</IdaFragmentsTable>
                 </DatabaseInterface>
 
                 <FileLoader>
                     <class>org.cloudraid.jlan.loader.CloudRaidObjectIdLoader</class>
                     <ThreadPoolSize>6:2</ThreadPoolSize>
-                    <TempDirectory>./tmp/files</TempDirectory>
+                    <TempDirectory>./tmp</TempDirectory>
                     <MaximumFilesPerDirectory>1000</MaximumFilesPerDirectory>
 
                     <InformationDispersal>
-                        <RepositoryType>
-                            <Class>org.cloudraid.ida.persistance.impl.FilesystemFragmentRepository</Class>
-                            <Type>file</Type>
-                        </RepositoryType>
+                        <FragmentRepositories>
+                            <RepositoryType>
+                                <Class>org.cloudraid.ida.persistance.impl.FilesystemFragmentRepository</Class>
+                                <Type>file</Type>
+                            </RepositoryType>
 
-                        <FragmentRepository type="file">
-                            <Url>./frag-repos/test1</Url>
-                        </FragmentRepository>
-                        <FragmentRepository type="file">
-                            <Url>./frag-repos/test2</Url>
-                        </FragmentRepository>
-                        <FragmentRepository type="file">
-                            <Url>./frag-repos/test3</Url>
-                        </FragmentRepository>
-                        <FragmentRepository type="file">
-                            <Url>./frag-repos/test4</Url>
-                        </FragmentRepository>
-                        <FragmentRepository type="file">
-                            <Url>./frag-repos/test5</Url>
-                        </FragmentRepository>
+                            <Repository type="file">
+                                <Url>./frag-repos/test1</Url>
+                            </Repository>
+                            <Repository type="file">
+                                <Url>./frag-repos/test2</Url>
+                            </Repository>
+                            <Repository type="file">
+                                <Url>./frag-repos/test3</Url>
+                            </Repository>
+                            <Repository type="file">
+                                <Url>./frag-repos/test4</Url>
+                            </Repository>
+                            <Repository type="file">
+                                <Url>./frag-repos/test5</Url>
+                            </Repository>
+                        </FragmentRepositories>
 
                         <InformationDispersalAlgorithm>
                             <Class>org.cloudraid.ida.persistance.impl.CrsInformationDispersalAlgorithm</Class>
                             <RedundantFragmentNum>2</RedundantFragmentNum>
                         </InformationDispersalAlgorithm>
 
-                        <TempFragmentDir>./tmp/fragments</TempFragmentDir>
+                        <TempFragmentDir>./frag-tmp</TempFragmentDir>
                     </InformationDispersal>
                 </FileLoader>
             </driver>
