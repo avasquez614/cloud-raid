@@ -134,6 +134,10 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
         }
 
         int requiredFragmentNum = ida.getFragmentNumber() - ida.getRedundantFragmentNumber();
+        if (fragmentsMetaData.size() < requiredFragmentNum) {
+            throw new IdaPersistanceException("Not enough fragments are saved to rebuild the data");
+        }
+
         List<FragmentLoadTask> loadTasks = new ArrayList<FragmentLoadTask>();
         CompletionService<byte[]> loadCompletionService = new ExecutorCompletionService<byte[]>(taskExecutor);
 

@@ -61,7 +61,7 @@
     </debug>
 
     <shares>
-        <diskshare name="CloudRaid" comment="Cloud RAID Filesystem">
+        <diskshare name="cloudraid" comment="Cloud RAID Filesystem">
             <driver>
                 <class>org.alfresco.jlan.server.filesys.db.DBDiskDriver</class>
                 <CacheTime>30</CacheTime>

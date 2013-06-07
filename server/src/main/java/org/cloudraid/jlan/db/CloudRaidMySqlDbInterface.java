@@ -351,8 +351,8 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
         try {
             conn = getConnection();
             pstmt = conn.prepareStatement(
-                    "INSERT INTO " + getIdaFragmentsTableName() +
-                    "VALUES (?, ?, ?)"
+                    "INSERT INTO " + getIdaFragmentsTableName() + " " +
+                    "VALUES (?, ?, ?);"
             );
 
             pstmt.setString(1, metaData.getDataId());
@@ -386,8 +386,8 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
             conn = getConnection();
             pstmt = conn.prepareStatement(
                     "SELECT * " +
-                    "FROM " + getIdaFragmentsTableName() +
-                    "WHERE ObjectId = ?"
+                    "FROM " + getIdaFragmentsTableName() + " " +
+                    "WHERE ObjectId = ?;"
             );
 
             pstmt.setString(1, dataId);
@@ -399,7 +399,7 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
 
             return fragmentsMetaData;
         } catch (SQLException e) {
-            throw new RepositoryException("SQL error while querying metadata for fragments of data ID '" + dataId + "'");
+            throw new RepositoryException("SQL error while querying metadata for fragments of data ID '" + dataId + "'", e);
         } finally {
             closeQuietly(pstmt);
             closeQuietly(conn);
@@ -426,8 +426,8 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
             conn = getConnection();
             pstmt = conn.prepareStatement(
                     "SELECT * " +
-                    "FROM " + getIdaFragmentsTableName() +
-                    "WHERE ObjectId = ? AND FragmentNumber = ?"
+                    "FROM " + getIdaFragmentsTableName() + " " +
+                    "WHERE ObjectId = ? AND FragmentNumber = ?;"
             );
 
             pstmt.setString(1, dataId);

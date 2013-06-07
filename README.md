@@ -9,7 +9,7 @@ Building Server
 ===============
 
 1. Run mvn clean install.
-2. Run ant build-server.
+2. Run ant buildServer.
 
 Starting Server (In Linux)
 ==========================
