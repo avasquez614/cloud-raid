@@ -1,7 +1,6 @@
 package org.cloudraid.ida.persistance.impl;
 
 import org.apache.log4j.Logger;
-import org.cloudraid.ida.persistance.api.FragmentMetaData;
 import org.cloudraid.ida.persistance.api.FragmentRepository;
 
 import java.util.concurrent.Callable;
@@ -15,29 +14,41 @@ public class FragmentLoadTask implements Callable<byte[]> {
 
     private static final Logger logger = Logger.getLogger(FragmentLoadTask.class);
 
-    protected FragmentMetaData fragmentMetaData;
+    protected String dataId;
     protected FragmentRepository fragmentRepository;
 
-    public FragmentLoadTask(FragmentMetaData fragmentMetaData, FragmentRepository fragmentRepository) {
-        this.fragmentMetaData = fragmentMetaData;
+    public FragmentLoadTask(String dataId, FragmentRepository fragmentRepository) {
+        this.dataId = dataId;
         this.fragmentRepository = fragmentRepository;
     }
 
     @Override
     public byte[] call() throws Exception {
         String fragmentName = getFragmentName();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Loading fragment '" + fragmentName + "' from " + fragmentRepository);
+        }
+
         try {
             return fragmentRepository.loadFragment(fragmentName);
         } catch (Exception e) {
-            logger.error("Error while trying to load fragment '" + fragmentName + "' from repository [" +
-                    fragmentRepository.getRepositoryUrl() + "]");
+            logger.error("Error while trying to load fragment '" + fragmentName + "' from " + fragmentRepository, e);
 
             return null;
         }
     }
 
     protected String getFragmentName() {
-        return fragmentMetaData.getDataId() + "." + InformationDispersalPersistanceServiceImpl.FRAGMENT_FILE_EXT;
+        return dataId + "." + InformationDispersalPersistanceServiceImpl.FRAGMENT_FILE_EXT;
+    }
+
+    @Override
+    public String toString() {
+        return "FragmentLoadTask[" +
+                "dataId='" + dataId + '\'' +
+                ", fragmentRepository=" + fragmentRepository +
+                ']';
     }
 
 }

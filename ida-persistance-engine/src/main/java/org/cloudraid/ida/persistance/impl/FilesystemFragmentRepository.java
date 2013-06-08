@@ -58,4 +58,22 @@ public class FilesystemFragmentRepository implements FragmentRepository {
         }
     }
 
+    @Override
+    public boolean deleteFragment(String name) throws RepositoryException {
+        File fragmentFile = new File(rootDir, name);
+
+        try {
+            return fragmentFile.delete();
+        } catch (Exception e) {
+            throw new RepositoryException("Error while trying to delete fragment " + fragmentFile, e);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "FilesystemFragmentRepository[" +
+                "rootDir=" + rootDir +
+                ']';
+    }
+
 }

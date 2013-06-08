@@ -87,4 +87,13 @@ public class CrsInformationDispersalAlgorithm implements InformationDispersalAlg
         }
     }
 
+    @Override
+    public String toString() {
+        return "CrsInformationDispersalAlgorithm[" +
+                "fragmentNumber=" + fragmentNumber +
+                ", redundantFragmentNumber=" + redundantFragmentNumber +
+                ", codec=" + codec +
+                ']';
+    }
+
 }

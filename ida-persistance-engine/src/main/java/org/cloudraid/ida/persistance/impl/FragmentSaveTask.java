@@ -5,7 +5,6 @@ import org.cloudraid.ida.persistance.api.FragmentMetaData;
 import org.cloudraid.ida.persistance.api.FragmentMetaDataRepository;
 import org.cloudraid.ida.persistance.api.FragmentRepository;
 
-import java.io.File;
 import java.util.concurrent.Callable;
 
 /**
@@ -38,13 +37,21 @@ public class FragmentSaveTask implements Callable<Boolean> {
     @Override
     public Boolean call() {
         String fragmentName = getFragmentName();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Saving fragment '" + fragmentName + "' in " + fragmentRepository);
+        }
+
         try {
             fragmentRepository.saveFragment(fragmentName, fragment);
         } catch (Exception e) {
-            logger.error("Error while trying to save fragment '" + fragmentName + "' in repository [" +
-                    fragmentRepository.getRepositoryUrl() + "]", e);
+            logger.error("Error while trying to save fragment '" + fragmentName + "' in " + fragmentRepository, e);
 
             return false;
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Saving fragment metadata " + fragmentMetaData);
         }
 
         try {
@@ -60,6 +67,15 @@ public class FragmentSaveTask implements Callable<Boolean> {
 
     protected String getFragmentName() {
         return fragmentMetaData.getDataId() + "." + InformationDispersalPersistanceServiceImpl.FRAGMENT_FILE_EXT;
+    }
+
+    @Override
+    public String toString() {
+        return "FragmentSaveTask[" +
+                "fragmentMetaData=" + fragmentMetaData +
+                ", fragmentRepository=" + fragmentRepository +
+                ", fragmentMetaDataRepository=" + fragmentMetaDataRepository +
+                ']';
     }
 
 }

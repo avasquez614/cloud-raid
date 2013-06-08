@@ -25,7 +25,7 @@ public interface FragmentRepository {
     void init() throws RepositoryException;
 
     /**
-     * Stores the given IDA fragment at the given URL in the repository.
+     * Stores the given IDA fragment of the given name in the repository.
      *
      * @param name
      *          the name of the fragment
@@ -35,12 +35,21 @@ public interface FragmentRepository {
     void saveFragment(String name, byte[] fragment) throws RepositoryException;
 
     /**
-     * Loads the fragment at the given URL from the repository.
+     * Loads the fragment of the given name from the repository.
      *
      * @param name
      *          the name of the fragment.
      * @return the IDA fragment
      */
     byte[] loadFragment(String name) throws RepositoryException;
+
+    /**
+     * Loads the fragment of the given name from the repository.
+     *
+     * @param name
+     *          the name of the fragment.
+     * @return true if the fragment was deleted.
+     */
+    boolean deleteFragment(String name) throws RepositoryException;
 
 }

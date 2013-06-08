@@ -1,6 +1,7 @@
 package org.cloudraid.jlan.loader;
 
 import org.alfresco.jlan.server.core.DeviceContext;
+import org.alfresco.jlan.server.filesys.db.DBException;
 import org.alfresco.jlan.server.filesys.db.ObjectIdFileLoader;
 import org.alfresco.jlan.server.filesys.loader.FileLoaderException;
 import org.alfresco.jlan.server.filesys.loader.FileSegment;
@@ -19,10 +20,9 @@ import org.springframework.extensions.config.ConfigElement;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Implementation of {@link ObjectIdFileLoader} that uses the IDA Persistance Engine for storing/loading files.
@@ -34,10 +34,13 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
     private static final Logger logger = Logger.getLogger(CloudRaidObjectIdLoader.class);
 
     protected InformationDispersalPersistanceService persistanceService;
+    protected Executor threadPoolExecutor;
 
     @Override
     public void initializeLoader(ConfigElement params, DeviceContext ctx) throws FileLoaderException, IOException {
         super.initializeLoader(params, ctx);
+
+        initThreadPoolExecutor();
 
         ConfigElement informationDispersalConfig = params.getChild("InformationDispersal");
         if (informationDispersalConfig == null) {
@@ -51,14 +54,13 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
         List<FragmentRepository> repositories = getFragmentRepositoriesFromConfig(informationDispersalConfig);
         InformationDispersalAlgorithm ida = getIdaFromConfig(informationDispersalConfig, repositories);
-        File tempFragmentDir = getTempFragmentDirFromConfig(informationDispersalConfig);
         FragmentMetaDataRepository metaDataRepository = (FragmentMetaDataRepository) getContext().getDBInterface();
 
         persistanceService = new InformationDispersalPersistanceServiceImpl();
         persistanceService.setFragmentRepositories(repositories);
         persistanceService.setFragmentMetaDataRepository(metaDataRepository);
         persistanceService.setInformationDispersalAlgorithm(ida);
-        persistanceService.setTemporaryFragmentDir(tempFragmentDir);
+        persistanceService.setTaskExecutor(threadPoolExecutor);
         try {
             persistanceService.init();
         } catch (Exception e) {
@@ -69,24 +71,35 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
     @Override
     public void loadFileData(int fileId, int streamId, String objectId, FileSegment fileSeg) throws IOException {
-        String dataId = createDataId(fileId, streamId);
         File dataFile = new File(fileSeg.getTemporaryFile());
         byte[] data;
 
-        try {
-            data = persistanceService.loadData(dataId);
-        } catch (Exception e) {
-            logger.error("Error while loading the data '" + dataId + "' through the " + persistanceService, e);
+        if (logger.isDebugEnabled()) {
+            String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
+            logger.debug("Loading data for " + fileInfoStr + " through the " + persistanceService);
+        }
 
-            throw new IOException("Error while loading the data '" + dataId + "' through the " + persistanceService, e);
+        try {
+            data = persistanceService.loadData(objectId);
+        } catch (Exception e) {
+            String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
+            logger.error("Error while loading data for " + fileInfoStr + " through the " + persistanceService, e);
+
+            throw new IOException("Error while loading data for " + fileInfoStr + " through the " + persistanceService, e);
+        }
+
+        if (logger.isDebugEnabled()) {
+            String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
+            logger.debug("Writing data for " + fileInfoStr + " to temp file " + dataFile);
         }
 
         try {
             FileUtils.writeByteArrayToFile(dataFile, data);
         } catch (IOException e) {
-            logger.error("Unable to write data '" + dataId + "' to temp file " + dataFile, e);
+            String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
+            logger.error("Unable to write data for " + fileInfoStr + " to temp file " + dataFile, e);
 
-            throw new IOException("Unable to write data '" + dataId + "' to temp file " + dataFile, e);
+            throw new IOException("Unable to write data for " + fileInfoStr + " to temp file " + dataFile, e);
         }
 
         fileSeg.setReadableLength(data.length);
@@ -95,28 +108,55 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
     @Override
     public String saveFileData(int fileId, int streamId, FileSegment fileSeg, NameValueList attrs) throws IOException {
-        String dataId = createDataId(fileId, streamId);
         File dataFile = new File(fileSeg.getTemporaryFile());
         byte[] data;
+
+        if (logger.isDebugEnabled()) {
+            String fileInfoStr = getFileInfoString(fileId, streamId, null);
+            logger.debug("Reading data for " + fileInfoStr + " from temp file " + dataFile);
+        }
+
         try {
             data = FileUtils.readFileToByteArray(dataFile);
         } catch (Exception e) {
-            logger.error("Unable to read data '" + dataId + "' from temp file " + dataFile, e);
+            String fileInfoStr = getFileInfoString(fileId, streamId, null);
+            logger.error("Unable to read data for " + fileInfoStr + " from temp file " + dataFile, e);
 
-            throw new IOException("Unable to read data '" + dataId + "' from temp file " + dataFile, e);
+            throw new IOException("Unable to read data for " + fileInfoStr + " from temp file " + dataFile, e);
+        }
+
+        String dataId = createDataId(fileId, streamId, data);
+
+        if (logger.isDebugEnabled()) {
+            String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
+            logger.debug("Saving data for " + fileInfoStr + " through the " + persistanceService);
         }
 
         try {
             persistanceService.saveData(dataId, data);
         } catch (Exception e) {
-            logger.error("Error while saving the data '" + dataId + "' through the " + persistanceService, e);
+            String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
+            logger.error("Error while saving data for " + fileInfoStr + " through the " + persistanceService, e);
 
-            throw new IOException("Error while saving the data '" + dataId + "' through the " + persistanceService, e);
+            throw new IOException("Error while saving data for " + fileInfoStr + " through the " + persistanceService, e);
         }
+
+        // Delete any previous data of the file/stream, so that it won't hang a long time in the repositories and thus
+        // reduce disk usage.
+        deleteOldSavedDataOnBackground(fileId, streamId);
 
         return dataId;
     }
 
+    /**
+     * Returns the fragment repositories for the InformationDispersalPersistanceService, given the specified config.
+     *
+     * @param informationDispersalConfig
+     *          the &lt;InformationDispersal&gt; config node, which should contain a &lt;FragmentRepositories&gt; config
+     *          child node.
+     * @return the fragment repositories
+     * @throws FileLoaderException
+     */
     protected List<FragmentRepository> getFragmentRepositoriesFromConfig(ConfigElement informationDispersalConfig)
             throws FileLoaderException {
         List<FragmentRepository> repositories = new ArrayList<FragmentRepository>();
@@ -195,6 +235,9 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
         return repositories;
     }
 
+    /**
+     * Creates and returns the map with the default repository types.
+     */
     protected Map<String, Class<?>> createDefaultRepositoryTypes() {
         Map<String, Class<?>> repositoryTypes = new HashMap<String, Class<?>>();
         repositoryTypes.put("file", FilesystemFragmentRepository.class);
@@ -202,24 +245,15 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
         return repositoryTypes;
     }
 
-    protected File getTempFragmentDirFromConfig(ConfigElement informationDispersalConfig) throws FileLoaderException {
-        ConfigElement tempFragmentDirConfig = informationDispersalConfig.getChild("TempFragmentDir");
-        if (tempFragmentDirConfig == null || StringUtils.isEmpty(tempFragmentDirConfig.getValue())) {
-            throw new FileLoaderException("CloudRaidObjectIdLoader TempFragmentDir not specified or null");
-        }
-
-        File tempFragmentDir = new File(tempFragmentDirConfig.getValue());
-        if (!tempFragmentDir.exists()) {
-            try {
-                FileUtils.forceMkdir(tempFragmentDir);
-            } catch (Exception e) {
-                throw new FileLoaderException("Failed to create TempFragmentDir" + tempFragmentDir.getAbsolutePath());
-            }
-        }
-
-        return tempFragmentDir;
-    }
-
+    /**
+     * Returns the IDA for the InformationDispersalPersistanceService, given the specified config.
+     *
+     * @param informationDispersalConfig
+     *          the &lt;InformationDispersal&gt; config node, which should contain a &lt;InformationDispersalAlgorithm&gt;
+     *          config child node.
+     * @return the IDA
+     * @throws FileLoaderException
+     */
     protected InformationDispersalAlgorithm getIdaFromConfig(ConfigElement informationDispersalConfig,
                                                              List<FragmentRepository> repositories)
             throws FileLoaderException {
@@ -272,8 +306,97 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
         return ida;
     }
 
-    protected String createDataId(int fileId, int streamId) {
-        return "" + fileId + "$" + streamId;
+    /**
+     * Initializes the thread pool executor.
+     */
+    protected void initThreadPoolExecutor() {
+        threadPoolExecutor = Executors.newCachedThreadPool();
+    }
+
+    /**
+     * Creates the data ID for a specific file/stream. Default implementation generates a UUID. A hash can also be used,
+     * but the problem is that if another file has the same hash, synchronization is probably needed.
+     *
+     * @param fileId
+     *          the file ID
+     * @param streamId
+     *          the stream ID
+     * @param data
+     *          the actual contents
+     * @return the data ID
+     */
+    protected String createDataId(int fileId, int streamId, byte[] data) {
+        return UUID.randomUUID().toString();
+    }
+
+    /**
+     * Returns a string for the given file info. Used for logging purposes
+     */
+    protected String getFileInfoString(int fileId, int streamId, String dataId) {
+        StringBuilder str = new StringBuilder();
+
+        str.append("[fileId='").append(fileId).append("'");
+        str.append(", streamId='").append(streamId).append("'");
+        if (dataId != null) {
+            str.append(", dataId='").append(dataId).append("'");
+        }
+        str.append("]");
+
+        return str.toString();
+    }
+
+    /**
+     * Deletes the old saved data (if any) for a specific file/stream.
+     *
+     * @param fileId
+     *          the file ID
+     * @param streamId
+     *          the stream ID
+     */
+    protected void deleteOldSavedDataOnBackground(final int fileId, final int streamId) {
+        try {
+            final String dataId = getOldSavedDataId(fileId, streamId);
+            if (dataId != null) {
+                threadPoolExecutor.execute(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        if (logger.isDebugEnabled()) {
+                            String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
+                            logger.debug("Deleting old saved data for " + fileInfoStr);
+                        }
+
+                        try {
+                            int deletedNum = persistanceService.deleteData(dataId);
+                            if (deletedNum == 0) {
+                                String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
+                                logger.warn("Unable to delete old saved data for " + fileInfoStr);
+                            }
+                        } catch (Exception e) {
+                            String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
+                            logger.error("Error while trying to delete old saved data for " + fileInfoStr);
+                        }
+                    }
+
+                });
+            }
+        } catch (Exception e) {
+            String fileInfoStr = getFileInfoString(fileId, streamId, null);
+            logger.error("Error while trying to retrieve ID for old saved data for " + fileInfoStr);
+        }
+    }
+
+    /**
+     * Returns the data ID of the old saved data of the file/stream (if any).
+     *
+     * @param fileId
+     *          the file ID
+     * @param streamId
+     *          the stream ID
+     * @return the ID of old saved data, or null if no previously saved data.
+     */
+    protected String getOldSavedDataId(int fileId, int streamId) throws DBException {
+        return getDBObjectIdInterface().loadObjectId(fileId, streamId);
     }
 
 }

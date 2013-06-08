@@ -15,6 +15,10 @@
         <level value="debug" />
     </logger>
 
+    <logger name="org.cloudraid.ida.persistance.impl">
+        <level value="info" />
+    </logger>
+
     <logger name="org.jigdfs">
         <level value="info" />
     </logger>

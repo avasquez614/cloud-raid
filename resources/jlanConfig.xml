@@ -84,7 +84,7 @@
                 <FileLoader>
                     <class>org.cloudraid.jlan.loader.CloudRaidObjectIdLoader</class>
                     <ThreadPoolSize>6:2</ThreadPoolSize>
-                    <TempDirectory>/var/tmp/cloud-raid-files</TempDirectory>
+                    <TempDirectory>/var/tmp/cloud-raid</TempDirectory>
                     <MaximumFilesPerDirectory>1000</MaximumFilesPerDirectory>
 
                     <InformationDispersal>
@@ -115,8 +115,6 @@
                             <Class>org.cloudraid.ida.persistance.impl.CrsInformationDispersalAlgorithm</Class>
                             <RedundantFragmentNum>2</RedundantFragmentNum>
                         </InformationDispersalAlgorithm>
-
-                        <TempFragmentDir>/var/tmp/cloud-raid-frags</TempFragmentDir>
                     </InformationDispersal>
                 </FileLoader>
             </driver>

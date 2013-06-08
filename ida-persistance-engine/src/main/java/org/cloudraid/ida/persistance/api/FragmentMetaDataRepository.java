@@ -12,7 +12,7 @@ import java.util.List;
 public interface FragmentMetaDataRepository {
 
     /**
-     * Saves the specified fragment metadata. The metadata shouldn't exist in the repository.
+     * Saves the specified fragment metadata.
      *
      * @param metaData
      *          the metadata to save
@@ -20,11 +20,12 @@ public interface FragmentMetaDataRepository {
     void saveFragmentMetaData(FragmentMetaData metaData) throws RepositoryException;
 
     /**
-     * Returns the metadata of all fragments of a particular data.
+     * Returns the metadata of all fragments of a particular data. The fragments must be associated to the current hash
+     * of the data.
      *
      * @param dataId
      *          the data ID
-     * @return a list of {@link FragmentMetaData} objects for the fragments of the data.
+     * @return a list of {@link FragmentMetaData} objects for the fragments of the data (empty if no metadata was found).
      */
     List<FragmentMetaData> getAllFragmentMetaDataForData(String dataId) throws RepositoryException;
 
@@ -35,8 +36,16 @@ public interface FragmentMetaDataRepository {
      *          the data ID
      * @param fragmentNumber
      *          the fragment number
-     * @return the fragment metadata
+     * @return the fragment metadata, or null if not found
      */
     FragmentMetaData getFragmentMetaData(String dataId, int fragmentNumber) throws RepositoryException;
+
+    /**
+     * Deletes the fragment metadata specified by the data ID and fragment number.
+     *
+     * @param metaData
+     *          the metadata to delete
+     */
+    void deleteFragmentMetaData(FragmentMetaData metaData) throws RepositoryException;
 
 }

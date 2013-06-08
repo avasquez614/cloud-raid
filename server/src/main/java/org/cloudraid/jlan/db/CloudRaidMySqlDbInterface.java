@@ -288,11 +288,11 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
 
                 stmt.execute(
                         "CREATE TABLE " + getIdaFragmentsTableName() +
-                        " (ObjectId VARCHAR(255) NOT NULL, FragmentNumber INTEGER NOT NULL, " +
-                        "FragmentRepositoryUrl VARCHAR(2000) NOT NULL, PRIMARY KEY (ObjectId, FragmentNumber));"
+                        " (DataId VARCHAR(255) NOT NULL, FragmentNumber INTEGER NOT NULL, " +
+                        "FragmentRepositoryUrl VARCHAR(2000) NOT NULL, PRIMARY KEY (DataId, FragmentNumber));"
                 );
 
-                stmt.execute("ALTER TABLE " + getIdaFragmentsTableName() + " ADD INDEX IObjectId (ObjectId);");
+                stmt.execute("ALTER TABLE " + getIdaFragmentsTableName() + " ADD INDEX IDataId (DataId);");
 
                 // DEBUG
                 if (Debug.EnableInfo && hasDebug())
@@ -352,12 +352,14 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
             conn = getConnection();
             pstmt = conn.prepareStatement(
                     "INSERT INTO " + getIdaFragmentsTableName() + " " +
-                    "VALUES (?, ?, ?);"
+                    "VALUES (?, ?, ?) " +
+                    "ON DUPLICATE KEY UPDATE FragmentRepositoryUrl = ?;"
             );
 
             pstmt.setString(1, metaData.getDataId());
             pstmt.setInt(2, metaData.getFragmentNumber());
             pstmt.setString(3, metaData.getRepositoryUrl());
+            pstmt.setString(4, metaData.getRepositoryUrl());
 
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -387,7 +389,7 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
             pstmt = conn.prepareStatement(
                     "SELECT * " +
                     "FROM " + getIdaFragmentsTableName() + " " +
-                    "WHERE ObjectId = ?;"
+                    "WHERE DataId = ?;"
             );
 
             pstmt.setString(1, dataId);
@@ -427,7 +429,7 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
             pstmt = conn.prepareStatement(
                     "SELECT * " +
                     "FROM " + getIdaFragmentsTableName() + " " +
-                    "WHERE ObjectId = ? AND FragmentNumber = ?;"
+                    "WHERE DataId = ? AND FragmentNumber = ?;"
             );
 
             pstmt.setString(1, dataId);
@@ -448,8 +450,39 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
         }
     }
 
+    /**
+     * Deletes the given fragment metadata record.
+     *
+     * @param metaData
+     *          the metadata to delete
+     * @throws RepositoryException
+     */
+    @Override
+    public void deleteFragmentMetaData(FragmentMetaData metaData) throws RepositoryException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(
+                    "DELETE FROM " + getIdaFragmentsTableName() + " " +
+                    "WHERE DataId = ? AND FragmentNumber = ?;"
+            );
+
+            pstmt.setString(1, metaData.getDataId());
+            pstmt.setInt(2, metaData.getFragmentNumber());
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("SQL error while trying to insert metadata record " + metaData, e);
+        } finally {
+            closeQuietly(pstmt);
+            closeQuietly(conn);
+        }
+    }
+
     protected FragmentMetaData mapFragmentMetaDataRow(ResultSet rs) throws SQLException {
-        String dataId = rs.getString("ObjectId");
+        String dataId = rs.getString("DataId");
         int fragmentNumber = rs.getInt("FragmentNumber");
         String repositoryUrl = rs.getString("FragmentRepositoryUrl");
 

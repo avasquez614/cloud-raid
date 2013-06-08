@@ -2,8 +2,8 @@ package org.cloudraid.ida.persistance.api;
 
 import org.cloudraid.ida.persistance.exception.IdaPersistanceException;
 
-import java.io.File;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * Service for persisting files through IDAs.
@@ -28,9 +28,9 @@ public interface InformationDispersalPersistanceService {
     void setInformationDispersalAlgorithm(InformationDispersalAlgorithm ida);
 
     /**
-     * Sets the directory to temporary keep the fragments while they're been saved.
+     * Sets the executor to use for save/load/delete background tasks.
      */
-    void setTemporaryFragmentDir(File directory);
+    void setTaskExecutor(Executor taskExecutor);
 
     /**
      * Initializes the service.
@@ -55,5 +55,14 @@ public interface InformationDispersalPersistanceService {
      * @return the loaded data
      */
     byte[] loadData(String id) throws IdaPersistanceException;
+
+    /**
+     * Deletes the fragments for the given data ID from their respective repositories.
+     *
+     * @param id
+     *          the ID used to identify the data in all repositories
+     * @return the number of fragments that were deleted.
+     */
+    int deleteData(String id) throws IdaPersistanceException;
 
 }
