@@ -2,8 +2,9 @@ TODO:
 =====
 
 * Add a delete to ObjectIdFileLoader.
-* Use FragmentRepositories in a least-used basis.
-* Test if it's more efficient in terms of memory to save/load fragments from the temp files.
+* Add checksum checking for integrity.
+* Add encription for more confidentiality (especially when transmitting the fragments).
 * Sync database and remote cloud repos to delete orphaned fragments.
-* Add checksum checking.
-* Add versioning (need to investigate on this).
+* Use FragmentRepositories in a least-used basis.
+* Refactor and optimize the JLan code.
+* Add versioning if possible (need to investigate on this).
