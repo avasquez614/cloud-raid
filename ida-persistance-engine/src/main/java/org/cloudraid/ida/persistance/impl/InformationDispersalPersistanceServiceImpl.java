@@ -160,7 +160,9 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
             byte[] fragment = null;
             try {
                 fragment = loadCompletionService.take().get();
-                fragments.add(fragment);
+                if (fragment != null) {
+                    fragments.add(fragment);
+                }
             } catch (Exception e) {
                 logger.error("Error while trying to retrieve load task result", e);
             }
@@ -230,37 +232,6 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
 
     protected AvailableFragmentRepositories getAvailableFragmentRepositories(Collection<FragmentRepository> repositories) {
         return new AvailableFragmentRepositories(repositories);
-    }
-
-    protected List<FragmentRepository> getUnusedFragmentRepositories(List<FragmentMetaData> savedFragmentsMetaData) {
-        List<FragmentRepository> unusedRepositories = new ArrayList<FragmentRepository>();
-
-        for (FragmentRepository repository : repositories) {
-            boolean repositoryFound = false;
-
-            for (FragmentMetaData metaData : savedFragmentsMetaData) {
-                if (repository.getRepositoryUrl().equals(metaData.getRepositoryUrl())) {
-                    repositoryFound = true;
-                    break;
-                }
-            }
-
-            if (!repositoryFound) {
-                unusedRepositories.add(repository);
-            }
-        }
-
-        return unusedRepositories;
-    }
-
-    protected boolean isFragmentSaved(int fragmentNumber, List<FragmentMetaData> savedFragmentsMetaData) {
-        for (FragmentMetaData metaData : savedFragmentsMetaData) {
-            if (fragmentNumber == metaData.getFragmentNumber()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     protected FragmentRepository getRepositoryForMetaData(FragmentMetaData metaData) {

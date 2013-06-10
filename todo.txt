@@ -1,9 +1,9 @@
 TODO:
 =====
 
-* Add a delete to ObjectIdFileLoader.
+* Add encription for confidentiality.
 * Add checksum checking for integrity.
-* Add encription for more confidentiality (especially when transmitting the fragments).
+* Add a delete to ObjectIdFileLoader.
 * Sync database and remote cloud repos to delete orphaned fragments.
 * Use FragmentRepositories in a least-used basis.
 * Refactor and optimize the JLan code.
