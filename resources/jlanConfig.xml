@@ -109,11 +109,14 @@
                             <Repository type="file">
                                 <Url>/var/lib/cloud-raid/repos/test5</Url>
                             </Repository>
+                            <Repository type="file">
+                                <Url>/var/lib/cloud-raid/repos/test6</Url>
+                            </Repository>
                         </FragmentRepositories>
 
                         <InformationDispersalAlgorithm>
                             <Class>org.cloudraid.ida.persistance.impl.CrsInformationDispersalAlgorithm</Class>
-                            <RedundantFragmentNum>2</RedundantFragmentNum>
+                            <RedundantFragmentNum>3</RedundantFragmentNum>
                         </InformationDispersalAlgorithm>
                     </InformationDispersal>
                 </FileLoader>

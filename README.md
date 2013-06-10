@@ -11,8 +11,12 @@ Building Server
 1. Run mvn clean install.
 2. Run ant buildServer.
 
-Starting Server (In Linux)
+Starting Server (In Linux or Mac)
 ==========================
 
 2. In PROJECT/build, run sudo ./runsrv.sh.
+
+Mounting NFS in client (Linux)
+
+1. mount -t nfs -o proto=tcp,port=2049 IP_ADDRESS:/cloudraid /mnt/cloudraid
 
