@@ -1,7 +1,9 @@
-package org.cloudraid.ida.persistance.impl;
+package org.cloudraid.ida.persistence.impl;
 
-import org.cloudraid.ida.persistance.api.InformationDispersalAlgorithm;
-import org.cloudraid.ida.persistance.exception.IdaException;
+import org.apache.commons.lang.StringUtils;
+import org.cloudraid.ida.persistence.api.Configuration;
+import org.cloudraid.ida.persistence.api.InformationDispersalAlgorithm;
+import org.cloudraid.ida.persistence.exception.IdaException;
 import org.jigdfs.ida.base.InformationDispersalDecoder;
 import org.jigdfs.ida.base.InformationDispersalEncoder;
 import org.jigdfs.ida.cauchyreedsolomon.CauchyInformationDispersalCodec;
@@ -15,6 +17,7 @@ import java.util.List;
  */
 public class CrsInformationDispersalAlgorithm implements InformationDispersalAlgorithm {
 
+    public static final int DEFAULT_REDUNDANT_FRAG_NUM = 2;
     public static final int CHUNK_SIZE = 4096;
 
     private int fragmentNumber;
@@ -27,22 +30,41 @@ public class CrsInformationDispersalAlgorithm implements InformationDispersalAlg
     }
 
     @Override
-    public void setFragmentNumber(int fragmentNumber) {
-        this.fragmentNumber = fragmentNumber;
-    }
-
-    @Override
     public int getRedundantFragmentNumber() {
         return redundantFragmentNumber;
     }
 
     @Override
-    public void setRedundantFragmentNumber(int redundantFragmentNumber) {
-        this.redundantFragmentNumber = redundantFragmentNumber;
-    }
+    public void init(Configuration config) throws IdaException {
+        String fragmentNumParam = config.getInitParameter("FragmentNum");
+        String redundantFragmentNumParam = config.getInitParameter("RedundantFragmentNum");
 
-    @Override
-    public void init() throws IdaException {
+        if (StringUtils.isEmpty(fragmentNumParam)) {
+            throw new IdaException("No FragmentNum param specified");
+        }
+
+        try {
+            fragmentNumber = Integer.parseInt(fragmentNumParam);
+        } catch (NumberFormatException e) {
+            throw new IdaException("Invalid format for FragmentNum param '" + fragmentNumParam + "'", e);
+        }
+
+        if (StringUtils.isNotEmpty(redundantFragmentNumParam)) {
+            try {
+                redundantFragmentNumber = Integer.parseInt(redundantFragmentNumParam);
+            } catch (NumberFormatException e) {
+                throw new IdaException("Invalid format for RedundantFragmentNum param '" + redundantFragmentNumParam +
+                        "'", e);
+            }
+        } else {
+            redundantFragmentNumber = DEFAULT_REDUNDANT_FRAG_NUM;
+        }
+
+        if (redundantFragmentNumber >= fragmentNumber) {
+            throw new IdaException("Redundant fragment number '" + redundantFragmentNumber + "' can't be greater than " +
+                    "or equal to fragment number '" + fragmentNumber + "'");
+        }
+
         int numSlices = fragmentNumber;
         int threshold = fragmentNumber - redundantFragmentNumber;
         int chunkSize = CHUNK_SIZE;

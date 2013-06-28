@@ -1,6 +1,6 @@
-package org.cloudraid.ida.persistance.api;
+package org.cloudraid.ida.persistence.api;
 
-import org.cloudraid.ida.persistance.exception.IdaException;
+import org.cloudraid.ida.persistence.exception.IdaException;
 
 import java.util.List;
 
@@ -13,20 +13,9 @@ import java.util.List;
 public interface InformationDispersalAlgorithm {
 
     /**
-     * Sets the number of fragments in which the data should be splitted.
-     */
-    void setFragmentNumber(int fragmentNumber);
-
-    /**
      * Returns the number of fragments in which the data is splitted.
      */
     int getFragmentNumber();
-
-    /**
-     * Sets the number of redundant fragments (number of fragments that can be spared in case the data
-     * needs to be restored from less fragments).
-     */
-    void setRedundantFragmentNumber(int redundantFragmentNumber);
 
     /**
      * Returns the number of redundant fragments (number of fragments that can be spared in case the data
@@ -36,8 +25,11 @@ public interface InformationDispersalAlgorithm {
 
     /**
      * Initializes the algorithm.
+     *
+     * @param config
+     *          the configuration that contains the initialization parameters and possible dependencies
      */
-    void init() throws IdaException;
+    void init(Configuration config) throws IdaException;
 
     /**
      * Splits the given data into {@code numberOfFragments}.

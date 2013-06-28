@@ -1,10 +1,10 @@
-package org.cloudraid.ida.persistance.impl;
+package org.cloudraid.ida.persistence.impl;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
-import org.cloudraid.ida.persistance.api.*;
-import org.cloudraid.ida.persistance.exception.IdaPersistanceException;
-import org.cloudraid.ida.persistance.exception.RepositoryException;
+import org.cloudraid.ida.persistence.api.*;
+import org.cloudraid.ida.persistence.exception.IdaPersistenceException;
+import org.cloudraid.ida.persistence.exception.RepositoryException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,7 +14,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 
 /**
- * Default implementation of the {@link InformationDispersalPersistanceService}.
+ * Default implementation of the {@link org.cloudraid.ida.persistence.api.InformationDispersalPersistenceService}.
  *
  * <p>
  *     <strong>WARN:</strong> This class is not thread-safe, for performance reasons (an instance of this object will
@@ -23,9 +23,9 @@ import java.util.concurrent.ExecutorCompletionService;
  *
  * @author avasquez
  */
-public class InformationDispersalPersistanceServiceImpl implements InformationDispersalPersistanceService {
+public class InformationDispersalPersistenceServiceImpl implements InformationDispersalPersistenceService {
 
-    private static final Logger logger = Logger.getLogger(InformationDispersalPersistanceServiceImpl.class);
+    private static final Logger logger = Logger.getLogger(InformationDispersalPersistenceServiceImpl.class);
 
     public static final String FRAGMENT_FILE_EXT = "frag";
 
@@ -35,27 +35,26 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
     protected Executor taskExecutor;
 
     @Override
-    public void setFragmentRepositories(List<FragmentRepository> repositories) {
-        this.repositories = repositories;
-    }
+    public void init(Configuration config) throws IdaPersistenceException {
+        repositories = config.getContext().getFragmentRepositories();
+        if (repositories == null || repositories.isEmpty()) {
+            throw new IdaPersistenceException("No FragmentRepositories found in Context, or empty");
+        }
 
-    @Override
-    public void setFragmentMetaDataRepository(FragmentMetaDataRepository metaDataRepository) {
-        this.metaDataRepository = metaDataRepository;
-    }
+        metaDataRepository = config.getContext().getFragmentMetaDataRepository();
+        if (metaDataRepository == null) {
+            throw new IdaPersistenceException("No FragmentMetaDataRepository found in Context");
+        }
 
-    @Override
-    public void setInformationDispersalAlgorithm(InformationDispersalAlgorithm ida) {
-        this.ida = ida;
-    }
+        ida = config.getContext().getInformationDispersalAlgorithm();
+        if (ida == null) {
+            throw new IdaPersistenceException("No InformationDispersalAlgorithm found in Context");
+        }
 
-    @Override
-    public void setTaskExecutor(Executor taskExecutor) {
-        this.taskExecutor = taskExecutor;
-    }
-
-    @Override
-    public void init() {
+        taskExecutor = config.getContext().getThreadPoolExecutor();
+        if (taskExecutor == null) {
+            throw new IdaPersistenceException("No ThreadPoolExecutor found in Context");
+        }
     }
 
     /**
@@ -67,12 +66,12 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
      *          the data to store
      */
     @Override
-    public void saveData(String id, byte[] data) throws IdaPersistanceException {
+    public void saveData(String id, byte[] data) throws IdaPersistenceException {
         List<byte[]> fragments;
         try {
             fragments = ida.split(data);
         } catch (Exception e) {
-            throw new IdaPersistanceException("Error while trying to split the data", e);
+            throw new IdaPersistenceException("Error while trying to split the data", e);
         }
 
         AvailableFragmentRepositories availableRepositories = new AvailableFragmentRepositories(repositories);
@@ -103,7 +102,7 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
         // TODO: Try to save on the background the fragments that couldn't be saved, only if the total of required
         // fragments to restore the data were successfully saved.
         if (savedNum < fragments.size()) {
-            throw new IdaPersistanceException("Some fragments couldn't be saved");
+            throw new IdaPersistenceException("Some fragments couldn't be saved");
         }
     }
 
@@ -115,17 +114,17 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
      * @return the loaded data.
      */
     @Override
-    public byte[] loadData(String id) throws IdaPersistanceException {
+    public byte[] loadData(String id) throws IdaPersistenceException {
         List<FragmentMetaData> fragmentsMetaData;
         try {
             fragmentsMetaData = metaDataRepository.getAllFragmentMetaDataForData(id);
         } catch (RepositoryException e) {
-            throw new IdaPersistanceException("Error while trying to retrieve all fragment metadata for the data", e);
+            throw new IdaPersistenceException("Error while trying to retrieve all fragment metadata for the data", e);
         }
 
         int requiredFragmentNum = ida.getFragmentNumber() - ida.getRedundantFragmentNumber();
         if (fragmentsMetaData.size() < requiredFragmentNum) {
-            throw new IdaPersistanceException("Not enough fragments are saved to rebuild the data");
+            throw new IdaPersistenceException("Not enough fragments are saved to rebuild the data");
         }
 
         // Make sure all repository URLs in the metadata are correct.
@@ -133,7 +132,7 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
         for (FragmentMetaData metaData : fragmentsMetaData) {
             FragmentRepository repository = getRepositoryForMetaData(metaData);
             if (repository == null) {
-                throw new IdaPersistanceException("No repository found for URL [" + metaData.getRepositoryUrl() + "]");
+                throw new IdaPersistenceException("No repository found for URL [" + metaData.getRepositoryUrl() + "]");
             }
 
             repositoriesUsed.add(repository);
@@ -147,7 +146,7 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
         for (int i = 0; i < requiredFragmentNum; i++) {
             FragmentRepository repository = availableRepositories.take();
             if (repository == null) {
-                throw new IdaPersistanceException("Not enough available repositories to rebuild the data");
+                throw new IdaPersistenceException("Not enough available repositories to rebuild the data");
             }
 
             loadCompletionService.submit(new FragmentLoadTask(id, repository));
@@ -170,7 +169,7 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
             if (fragment == null) {
                 FragmentRepository repository = availableRepositories.take();
                 if (repository == null) {
-                    throw new IdaPersistanceException("Not enough available repositories to rebuild the data");
+                    throw new IdaPersistenceException("Not enough available repositories to rebuild the data");
                 }
 
                 loadCompletionService.submit(new FragmentLoadTask(id, repository));
@@ -180,17 +179,24 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
         try {
             return ida.combine(fragments);
         } catch (Exception e) {
-            throw new IdaPersistanceException("Error while trying to combine the fragments", e);
+            throw new IdaPersistenceException("Error while trying to combine the fragments", e);
         }
     }
 
+    /**
+     * Deletes the fragments for the given data ID from their respective repositories.
+     *
+     * @param id
+     *          the ID used to identify the data in all repositories
+     * @return the number of fragments that were deleted.
+     */
     @Override
-    public int deleteData(String id) throws IdaPersistanceException {
+    public int deleteData(String id) throws IdaPersistenceException {
         List<FragmentMetaData> fragmentsMetaData;
         try {
             fragmentsMetaData = metaDataRepository.getAllFragmentMetaDataForData(id);
         } catch (RepositoryException e) {
-            throw new IdaPersistanceException("Error while trying to retrieve all fragment metadata for the data", e);
+            throw new IdaPersistenceException("Error while trying to retrieve all fragment metadata for the data", e);
         }
 
         if (CollectionUtils.isEmpty(fragmentsMetaData)) {
@@ -202,7 +208,7 @@ public class InformationDispersalPersistanceServiceImpl implements InformationDi
         for (FragmentMetaData metaData : fragmentsMetaData) {
             FragmentRepository repository = getRepositoryForMetaData(metaData);
             if (repository == null) {
-                throw new IdaPersistanceException("No repository found for URL [" + metaData.getRepositoryUrl() + "]");
+                throw new IdaPersistenceException("No repository found for URL [" + metaData.getRepositoryUrl() + "]");
             }
 
             deleteTasks.add(new FragmentDeleteTask(metaData, repository, metaDataRepository));

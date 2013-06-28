@@ -15,7 +15,7 @@
         <level value="debug" />
     </logger>
 
-    <logger name="org.cloudraid.ida.persistance.impl">
+    <logger name="org.cloudraid.ida.persistence.impl">
         <level value="info" />
     </logger>
 

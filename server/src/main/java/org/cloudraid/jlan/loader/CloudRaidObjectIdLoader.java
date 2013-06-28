@@ -9,13 +9,12 @@ import org.alfresco.jlan.util.NameValueList;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
-import org.cloudraid.ida.persistance.api.FragmentMetaDataRepository;
-import org.cloudraid.ida.persistance.api.FragmentRepository;
-import org.cloudraid.ida.persistance.api.InformationDispersalAlgorithm;
-import org.cloudraid.ida.persistance.api.InformationDispersalPersistanceService;
-import org.cloudraid.ida.persistance.impl.CrsInformationDispersalAlgorithm;
-import org.cloudraid.ida.persistance.impl.FilesystemFragmentRepository;
-import org.cloudraid.ida.persistance.impl.InformationDispersalPersistanceServiceImpl;
+import org.cloudraid.ida.persistence.api.*;
+import org.cloudraid.ida.persistence.crypto.EncryptionKeyRepository;
+import org.cloudraid.ida.persistence.impl.CrsInformationDispersalAlgorithm;
+import org.cloudraid.ida.persistence.impl.FilesystemFragmentRepository;
+import org.cloudraid.ida.persistence.impl.InformationDispersalPersistenceServiceImpl;
+import org.cloudraid.jlan.util.JlanConfiguration;
 import org.springframework.extensions.config.ConfigElement;
 
 import java.io.File;
@@ -33,7 +32,7 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
     private static final Logger logger = Logger.getLogger(CloudRaidObjectIdLoader.class);
 
-    protected InformationDispersalPersistanceService persistanceService;
+    protected InformationDispersalPersistenceService persistanceService;
     protected Executor threadPoolExecutor;
 
     @Override
@@ -42,30 +41,31 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
         initThreadPoolExecutor();
 
+
         ConfigElement informationDispersalConfig = params.getChild("InformationDispersal");
         if (informationDispersalConfig == null) {
-            throw new FileLoaderException("CloudRaidObjectIdLoader InformationDispersal not specified");
+            throw new FileLoaderException("InformationDispersal not specified");
         }
 
         if (!(getContext().getDBInterface() instanceof FragmentMetaDataRepository)) {
-            throw new FileLoaderException("CloudRaidObjectIdLoader DBInterface should implement " +
-                    FragmentMetaDataRepository.class.getName());
+            throw new FileLoaderException("DBInterface should implement " + FragmentMetaDataRepository.class.getName());
+        }
+        if (!(getContext().getDBInterface() instanceof EncryptionKeyRepository)) {
+            throw new FileLoaderException("DBInterface should implement " + EncryptionKeyRepository.class.getName());
         }
 
-        List<FragmentRepository> repositories = getFragmentRepositoriesFromConfig(informationDispersalConfig);
-        InformationDispersalAlgorithm ida = getIdaFromConfig(informationDispersalConfig, repositories);
-        FragmentMetaDataRepository metaDataRepository = (FragmentMetaDataRepository) getContext().getDBInterface();
+        Context context = new Context();
+        context.setFragmentRepositories(getFragmentRepositoriesFromConfig(informationDispersalConfig, context));
+        context.setFragmentMetaDataRepository((FragmentMetaDataRepository) getContext().getDBInterface());
+        context.setInformationDispersalAlgorithm(getIdaFromConfig(informationDispersalConfig, context));
+        context.setEncryptionKeyRepository((EncryptionKeyRepository) getContext().getDBInterface());
+        context.setThreadPoolExecutor(threadPoolExecutor);
 
-        persistanceService = new InformationDispersalPersistanceServiceImpl();
-        persistanceService.setFragmentRepositories(repositories);
-        persistanceService.setFragmentMetaDataRepository(metaDataRepository);
-        persistanceService.setInformationDispersalAlgorithm(ida);
-        persistanceService.setTaskExecutor(threadPoolExecutor);
+        persistanceService = new InformationDispersalPersistenceServiceImpl();
         try {
-            persistanceService.init();
+            persistanceService.init(new JlanConfiguration(informationDispersalConfig, context));
         } catch (Exception e) {
-            throw new FileLoaderException("CloudRaidObjectIdLoader Failed to initialize " + persistanceService + ": " +
-                    e.getMessage());
+            throw new FileLoaderException("Failed to initialize " + persistanceService + ": " + e.getMessage());
         }
     }
 
@@ -149,21 +149,23 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
     }
 
     /**
-     * Returns the fragment repositories for the InformationDispersalPersistanceService, given the specified config.
+     * Returns the fragment repositories for the InformationDispersalPersistenceService, given the specified config.
      *
      * @param informationDispersalConfig
      *          the &lt;InformationDispersal&gt; config node, which should contain a &lt;FragmentRepositories&gt; config
      *          child node.
+     * @param context
+     *          the IDA Persistance Engine component context.
      * @return the fragment repositories
      * @throws FileLoaderException
      */
-    protected List<FragmentRepository> getFragmentRepositoriesFromConfig(ConfigElement informationDispersalConfig)
-            throws FileLoaderException {
+    protected List<FragmentRepository> getFragmentRepositoriesFromConfig(ConfigElement informationDispersalConfig,
+                                                                         Context context) throws FileLoaderException {
         List<FragmentRepository> repositories = new ArrayList<FragmentRepository>();
 
         ConfigElement reposConfig = informationDispersalConfig.getChild("FragmentRepositories");
         if (reposConfig == null) {
-            throw new FileLoaderException("CloudRaidObjectIdLoader FragmentRepositories not specified");
+            throw new FileLoaderException("FragmentRepositories not specified");
         }
 
         Map<String, Class<?>> repositoryTypes = createDefaultRepositoryTypes();
@@ -175,10 +177,10 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
                 ConfigElement typeConfig = reposConfigChild.getChild("Type");
 
                 if (classConfig == null || StringUtils.isEmpty(classConfig.getValue())) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Class for RepositoryType not specified or null");
+                    throw new FileLoaderException("Class for RepositoryType not specified or null");
                 }
                 if (typeConfig == null || StringUtils.isEmpty(typeConfig.getValue())) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Type for RepositoryType not specified or null");
+                    throw new FileLoaderException("Type for RepositoryType not specified or null");
                 }
                 
                 ClassLoader classLoader = getClass().getClassLoader();
@@ -191,13 +193,13 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
             } else if (reposConfigChild.getName().equals("Repository")) {
                 String type = reposConfigChild.getAttribute("type");
                 if (StringUtils.isEmpty(type)) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader type for Repository not specified or null");
+                    throw new FileLoaderException("Repository not specified or null");
                 }
 
                 Class<?> repoClass = repositoryTypes.get(type);
                 if (repoClass == null) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Unrecognized repository type '" + type + "'. " +
-                            "Make sure the corresponding RepositoryType is defined before the Repository");
+                    throw new FileLoaderException("Unrecognized repository type '" + type + "'. Make sure the " +
+                            "corresponding RepositoryType is defined before the Repository");
                 }
 
                 FragmentRepository repo;
@@ -208,28 +210,21 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
                             ": " + e.getMessage());
                 }
 
-                ConfigElement urlConfig = reposConfigChild.getChild("Url");
-                if (urlConfig == null || StringUtils.isEmpty(urlConfig.getValue())) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Url for Repository not specified or null");
-                }
-
-                repo.setRepositoryUrl(urlConfig.getValue());
                 try {
-                    repo.init();
+                    repo.init(new JlanConfiguration(reposConfigChild, context));
                 } catch (Exception e) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Failed to initialize " + repo + ": " +
-                            e.getMessage());
+                    throw new FileLoaderException("Failed to initialize " + repoClass.getName() + ": " +  e.getMessage());
                 }
 
                 repositories.add(repo);
             } else {
-                throw new FileLoaderException("CloudRaidObjectIdLoader Unrecognized element inside FragmentRepositories: " +
-                        reposConfigChild.getName());
+                throw new FileLoaderException("Unrecognized element inside FragmentRepositories: " + reposConfigChild
+                        .getName());
             }
         }
 
         if (repositories.isEmpty()) {
-            throw new FileLoaderException("CloudRaidObjectIdLoader No repositories specified");
+            throw new FileLoaderException("No repositories specified");
         }
 
         return repositories;
@@ -246,26 +241,23 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
     }
 
     /**
-     * Returns the IDA for the InformationDispersalPersistanceService, given the specified config.
+     * Returns the IDA for the InformationDispersalPersistenceService, given the specified config.
      *
      * @param informationDispersalConfig
      *          the &lt;InformationDispersal&gt; config node, which should contain a &lt;InformationDispersalAlgorithm&gt;
      *          config child node.
+     * @param context
+     *          the IDA Persistance Engine component context.
      * @return the IDA
      * @throws FileLoaderException
      */
-    protected InformationDispersalAlgorithm getIdaFromConfig(ConfigElement informationDispersalConfig,
-                                                             List<FragmentRepository> repositories)
+    protected InformationDispersalAlgorithm getIdaFromConfig(ConfigElement informationDispersalConfig, Context context)
             throws FileLoaderException {
-        InformationDispersalAlgorithm ida = null;
-        int fragmentNum = repositories.size();
-        int redundantFragmentNum = DEFAULT_REDUNDANT_FRAGMENT_NUMBER;
+        InformationDispersalAlgorithm ida;
 
         ConfigElement idaConfig = informationDispersalConfig.getChild("InformationDispersalAlgorithm");
         if (idaConfig != null) {
             ConfigElement classConfig = idaConfig.getChild("Class");
-            ConfigElement redundantFragmentNumConfig = idaConfig.getChild("RedundantFragmentNum");
-
             if (classConfig != null && StringUtils.isNotEmpty(classConfig.getValue())) {
                 ClassLoader classLoader = getClass().getClassLoader();
                 try {
@@ -273,34 +265,19 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
                 } catch (ClassNotFoundException e) {
                     throw new FileLoaderException("Failed to load class " + classConfig.getValue());
                 } catch (Exception e) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Failed to instantiate " + classConfig.getValue() +
-                            ": " + e.getMessage());
+                    throw new FileLoaderException("Failed to instantiate " + classConfig.getValue() + ": " + e.getMessage());
                 }
+            } else {
+                ida = new CrsInformationDispersalAlgorithm();
             }
-            if (redundantFragmentNumConfig != null && StringUtils.isNotEmpty(redundantFragmentNumConfig.getValue())) {
-                try {
-                    redundantFragmentNum = Integer.parseInt(redundantFragmentNumConfig.getValue());
-                } catch (Exception e) {
-                    throw new FileLoaderException("CloudRaidObjectIdLoader Invalid RedundantFragmentNum: " +  e.getMessage());
-                }
-            }
+        } else {
+            throw new FileLoaderException("InformationDispersalAlgorithm not specified");
         }
 
-        if (redundantFragmentNum >= fragmentNum) {
-            throw new FileLoaderException("CloudRaidObjectIdLoader Redundant fragment number (" + redundantFragmentNum +
-                    ") can't be greater than or equal to fragment number (" + fragmentNum + ")");
-        }
-
-        if (ida == null) {
-            ida = new CrsInformationDispersalAlgorithm();
-        }
-
-        ida.setFragmentNumber(fragmentNum);
-        ida.setRedundantFragmentNumber(redundantFragmentNum);
         try {
-            ida.init();
+            ida.init(new JlanConfiguration(idaConfig, context));
         } catch (Exception e) {
-            throw new FileLoaderException("CloudRaidObjectIdLoader Failed to initialize " + ida + ": " + e.getMessage());
+            throw new FileLoaderException("Failed to initialize " + ida.getClass().getName() + ": " + e.getMessage());
         }
 
         return ida;

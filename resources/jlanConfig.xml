@@ -79,6 +79,7 @@
                     <ObjectIdTable>ObjectId</ObjectIdTable>
                     <SymLinksTable>SymLinks</SymLinksTable>
                     <IdaFragmentsTable>IdaFragments</IdaFragmentsTable>
+                    <EncryptionKeysTable>EncryptionKeys</EncryptionKeysTable>
                 </DatabaseInterface>
 
                 <FileLoader>
@@ -90,7 +91,7 @@
                     <InformationDispersal>
                         <FragmentRepositories>
                             <RepositoryType>
-                                <Class>org.cloudraid.ida.persistance.impl.FilesystemFragmentRepository</Class>
+                                <Class>org.cloudraid.ida.persistence.impl.FilesystemFragmentRepository</Class>
                                 <Type>file</Type>
                             </RepositoryType>
 
@@ -115,7 +116,9 @@
                         </FragmentRepositories>
 
                         <InformationDispersalAlgorithm>
-                            <Class>org.cloudraid.ida.persistance.impl.CrsInformationDispersalAlgorithm</Class>
+                            <Class>org.cloudraid.ida.persistence.impl.CrsInformationDispersalAlgorithm</Class>
+                            <!-- FOR NOW, THIS SHOULD BE THE SAME AS THE NUMBER OF REPOS -->
+                            <FragmentNum>6</FragmentNum>
                             <RedundantFragmentNum>3</RedundantFragmentNum>
                         </InformationDispersalAlgorithm>
                     </InformationDispersal>

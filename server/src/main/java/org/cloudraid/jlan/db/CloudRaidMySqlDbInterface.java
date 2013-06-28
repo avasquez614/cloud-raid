@@ -4,9 +4,10 @@ import org.alfresco.jlan.debug.Debug;
 import org.alfresco.jlan.server.config.InvalidConfigurationException;
 import org.alfresco.jlan.server.filesys.db.DBDeviceContext;
 import org.alfresco.jlan.server.filesys.db.mysql.MySQLDBInterface;
-import org.cloudraid.ida.persistance.api.FragmentMetaData;
-import org.cloudraid.ida.persistance.api.FragmentMetaDataRepository;
-import org.cloudraid.ida.persistance.exception.RepositoryException;
+import org.cloudraid.ida.persistence.api.FragmentMetaData;
+import org.cloudraid.ida.persistence.api.FragmentMetaDataRepository;
+import org.cloudraid.ida.persistence.crypto.EncryptionKeyRepository;
+import org.cloudraid.ida.persistence.exception.RepositoryException;
 import org.springframework.extensions.config.ConfigElement;
 
 import java.sql.*;
@@ -14,15 +15,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Extends {@link MySQLDBInterface} to add a table for IDA fragment records.
+ * Extends {@link MySQLDBInterface} to add a table for IDA fragment records and a table for encryption keys.
  *
  * @author avasquez
  */
-public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements FragmentMetaDataRepository {
+public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements FragmentMetaDataRepository, EncryptionKeyRepository {
 
     public static final String DEFAULT_IDA_FRAGMENTS_TABLE_NAME = "CloudRaidIdaFragments";
+    public static final String DEFAULT_ENCRYPTION_KEYS_TABLE_NAME = "CloudRaidEncryptionKeys";
 
     protected String idaFragmentsTableName;
+    protected String encryptionKeysTableName;
 
     /**
      * Just like {@link MySQLDBInterface#initializeDatabase(org.alfresco.jlan.server.filesys.db.DBDeviceContext,
@@ -80,6 +83,7 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
             boolean foundObjId = false;
             boolean foundSymLink = false;
             boolean foundIdaFragments = false;
+            boolean foundEncryptionKeys = false;
 
             while (rs.next()) {
                 // Get the table name
@@ -106,6 +110,8 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
                     foundSymLink = true;
                 else if (tblName.equalsIgnoreCase(getIdaFragmentsTableName()))
                     foundIdaFragments = true;
+                else if (tblName.equalsIgnoreCase(getEncryptionKeysTableName()))
+                    foundEncryptionKeys = true;
             }
 
             // Check if the file system structure table should be created
@@ -298,6 +304,21 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
                 if (Debug.EnableInfo && hasDebug())
                     Debug.println("[mySQL] Created table " + getIdaFragmentsTableName());
             }
+            // Check if the encryption keys table should be created
+            if (foundEncryptionKeys == false && hasEncryptionKeysTableName()) {
+                // Create the encryption keys table
+                Statement stmt = conn.createStatement();
+
+                stmt.execute(
+                        "CREATE TABLE " + getEncryptionKeysTableName() +
+                        " (DataId VARCHAR(255) NOT NULL, EncryptionKey VARCHAR(150) NOT NULL, " +
+                        "PRIMARY KEY (DataId));"
+                );
+
+                // DEBUG
+                if (Debug.EnableInfo && hasDebug())
+                    Debug.println("[mySQL] Created table " + getEncryptionKeysTableName());
+            }
         } catch (Exception ex) {
             Debug.println("Error: " + ex.toString());
         } finally {
@@ -322,6 +343,20 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
     }
 
     /**
+     * Returns the name of the encryption keys table.
+     */
+    protected String getEncryptionKeysTableName() {
+        return encryptionKeysTableName;
+    }
+
+    /**
+     * Returns true if this interface has an encryption keys table name.
+     */
+    protected boolean hasEncryptionKeysTableName() {
+        return encryptionKeysTableName != null;
+    }
+
+    /**
      * Configures the current object properties according to the params.
      *
      * @param params
@@ -333,6 +368,13 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
             idaFragmentsTableName = configElement.getValue();
         } else {
             idaFragmentsTableName = DEFAULT_IDA_FRAGMENTS_TABLE_NAME;
+        }
+
+        configElement = params.getChild("EncryptionKeysTable");
+        if (configElement != null) {
+            encryptionKeysTableName = configElement.getValue();
+        } else {
+            encryptionKeysTableName = DEFAULT_ENCRYPTION_KEYS_TABLE_NAME;
         }
     }
 
@@ -474,7 +516,100 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
 
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            throw new RepositoryException("SQL error while trying to insert metadata record " + metaData, e);
+            throw new RepositoryException("SQL error while trying to delete metadata record " + metaData, e);
+        } finally {
+            closeQuietly(pstmt);
+            closeQuietly(conn);
+        }
+    }
+
+    /**
+     * Inserts a new encryption key record.
+     *
+     * @param dataId
+     * @param key
+     */
+    @Override
+    public void saveKey(String dataId, String key) throws RepositoryException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(
+                    "INSERT INTO " + getEncryptionKeysTableName() + " " +
+                    "VALUES (?, ?);"
+            );
+
+            pstmt.setString(1, dataId);
+            pstmt.setString(2, key);
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("SQL error while trying to insert encryption key record for data ID '" + dataId + "'", e);
+        } finally {
+            closeQuietly(pstmt);
+            closeQuietly(conn);
+        }
+    }
+
+    /**
+     * Selects the single encryption key for the specified data ID.
+     *
+     * @param dataId
+     * @return the encryption key
+     */
+    @Override
+    public String getKey(String dataId) throws RepositoryException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(
+                    "SELECT EncryptionKey " +
+                    "FROM " + getEncryptionKeysTableName() + " " +
+                    "WHERE DataId = ?;"
+            );
+
+            pstmt.setString(1, dataId);
+
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("EncryptionKey") ;
+            }
+
+            return null;
+        } catch (SQLException e) {
+            throw new RepositoryException("SQL error while querying encryption key for data ID '" + dataId + "'");
+        } finally {
+            closeQuietly(pstmt);
+            closeQuietly(conn);
+        }
+    }
+
+    /**
+     * Deletes the encryption key record for the specified data ID.
+     *
+     * @param dataId
+     */
+    @Override
+    public void deleteKey(String dataId) throws RepositoryException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(
+                    "DELETE FROM " + getEncryptionKeysTableName() + " " +
+                    "WHERE DataId = ?;"
+            );
+
+            pstmt.setString(1, dataId);
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("SQL error while trying to delete encryption key for data ID '" + dataId + "'");
         } finally {
             closeQuietly(pstmt);
             closeQuietly(conn);

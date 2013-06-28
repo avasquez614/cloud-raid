@@ -1,6 +1,6 @@
-package org.cloudraid.ida.persistance.api;
+package org.cloudraid.ida.persistence.api;
 
-import org.cloudraid.ida.persistance.exception.RepositoryException;
+import org.cloudraid.ida.persistence.exception.RepositoryException;
 
 /**
  * Represents a repository where IDA fragments can be stored.
@@ -15,14 +15,12 @@ public interface FragmentRepository {
     String getRepositoryUrl();
 
     /**
-     * Sets the URL for this repository.
-     */
-    void setRepositoryUrl(String repositoryUrl);
-
-    /**
      * Initializes the repository.
+     *
+     * @param config
+     *          the configuration that contains the initialization parameters and possible dependencies
      */
-    void init() throws RepositoryException;
+    void init(Configuration config) throws RepositoryException;
 
     /**
      * Stores the given IDA fragment of the given name in the repository.

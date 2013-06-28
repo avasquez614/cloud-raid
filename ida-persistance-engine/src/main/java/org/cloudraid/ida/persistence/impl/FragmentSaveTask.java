@@ -1,9 +1,9 @@
-package org.cloudraid.ida.persistance.impl;
+package org.cloudraid.ida.persistence.impl;
 
 import org.apache.log4j.Logger;
-import org.cloudraid.ida.persistance.api.FragmentMetaData;
-import org.cloudraid.ida.persistance.api.FragmentMetaDataRepository;
-import org.cloudraid.ida.persistance.api.FragmentRepository;
+import org.cloudraid.ida.persistence.api.FragmentMetaData;
+import org.cloudraid.ida.persistence.api.FragmentMetaDataRepository;
+import org.cloudraid.ida.persistence.api.FragmentRepository;
 
 import java.util.concurrent.Callable;
 
@@ -66,7 +66,7 @@ public class FragmentSaveTask implements Callable<Boolean> {
     }
 
     protected String getFragmentName() {
-        return fragmentMetaData.getDataId() + "." + InformationDispersalPersistanceServiceImpl.FRAGMENT_FILE_EXT;
+        return fragmentMetaData.getDataId() + "." + InformationDispersalPersistenceServiceImpl.FRAGMENT_FILE_EXT;
     }
 
     @Override

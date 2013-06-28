@@ -1,7 +1,7 @@
-package org.cloudraid.ida.persistance.impl;
+package org.cloudraid.ida.persistence.impl;
 
 import org.apache.log4j.Logger;
-import org.cloudraid.ida.persistance.api.FragmentRepository;
+import org.cloudraid.ida.persistence.api.FragmentRepository;
 
 import java.util.concurrent.Callable;
 
@@ -40,7 +40,7 @@ public class FragmentLoadTask implements Callable<byte[]> {
     }
 
     protected String getFragmentName() {
-        return dataId + "." + InformationDispersalPersistanceServiceImpl.FRAGMENT_FILE_EXT;
+        return dataId + "." + InformationDispersalPersistenceServiceImpl.FRAGMENT_FILE_EXT;
     }
 
     @Override

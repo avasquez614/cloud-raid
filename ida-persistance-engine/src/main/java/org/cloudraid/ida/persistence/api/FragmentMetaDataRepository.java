@@ -1,6 +1,6 @@
-package org.cloudraid.ida.persistance.api;
+package org.cloudraid.ida.persistence.api;
 
-import org.cloudraid.ida.persistance.exception.RepositoryException;
+import org.cloudraid.ida.persistence.exception.RepositoryException;
 
 import java.util.List;
 

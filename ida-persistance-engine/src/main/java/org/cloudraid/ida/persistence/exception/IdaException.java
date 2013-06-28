@@ -1,11 +1,11 @@
-package org.cloudraid.ida.persistance.exception;
+package org.cloudraid.ida.persistence.exception;
 
 /**
- * Exceptions thrown by {@link org.cloudraid.ida.persistance.api.InformationDispersalAlgorithm}.
+ * Exception thrown by {@link org.cloudraid.ida.persistence.api.InformationDispersalAlgorithm}.
  *
  * @author avasquez
  */
-public class IdaException extends IdaPersistanceException {
+public class IdaException extends IdaPersistenceException {
 
     public IdaException() {
     }

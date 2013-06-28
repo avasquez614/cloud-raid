@@ -1,6 +1,6 @@
-package org.cloudraid.ida.persistance.impl;
+package org.cloudraid.ida.persistence.impl;
 
-import org.cloudraid.ida.persistance.api.FragmentRepository;
+import org.cloudraid.ida.persistence.api.FragmentRepository;
 
 import java.util.Collection;
 import java.util.LinkedList;

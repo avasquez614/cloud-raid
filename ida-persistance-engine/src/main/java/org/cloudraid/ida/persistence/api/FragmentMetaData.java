@@ -1,4 +1,4 @@
-package org.cloudraid.ida.persistance.api;
+package org.cloudraid.ida.persistence.api;
 
 /**
  * The fragment metadata, stored in a {@link FragmentMetaDataRepository} to be used for later fragment retrieval.

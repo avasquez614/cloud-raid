@@ -1,8 +1,10 @@
-package org.cloudraid.ida.persistance.impl;
+package org.cloudraid.ida.persistence.impl;
 
 import org.apache.commons.io.FileUtils;
-import org.cloudraid.ida.persistance.api.FragmentRepository;
-import org.cloudraid.ida.persistance.exception.RepositoryException;
+import org.apache.commons.lang.StringUtils;
+import org.cloudraid.ida.persistence.api.Configuration;
+import org.cloudraid.ida.persistence.api.FragmentRepository;
+import org.cloudraid.ida.persistence.exception.RepositoryException;
 
 import java.io.File;
 
@@ -20,12 +22,12 @@ public class FilesystemFragmentRepository implements FragmentRepository {
     }
 
     @Override
-    public void setRepositoryUrl(String repositoryUrl) {
-        this.repositoryUrl = repositoryUrl;
-    }
+    public void init(Configuration config) throws RepositoryException {
+        repositoryUrl = config.getInitParameter("Url");
+        if (StringUtils.isEmpty(repositoryUrl)) {
+            throw new RepositoryException("No Url param specified");
+        }
 
-    @Override
-    public void init() throws RepositoryException {
         rootDir = new File(repositoryUrl);
         if (!rootDir.exists()) {
             try {
