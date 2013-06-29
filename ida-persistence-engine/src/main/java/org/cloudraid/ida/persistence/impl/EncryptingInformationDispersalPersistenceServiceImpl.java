@@ -46,7 +46,12 @@ public class EncryptingInformationDispersalPersistenceServiceImpl extends Inform
      */
     @Override
     public void saveData(String id, byte[] data) throws IdaPersistenceException {
-        EncryptionParams params = encryptionProvider.createDefaultParams();
+        EncryptionParams params;
+        try {
+            params = encryptionProvider.createDefaultParams();
+        } catch (Exception e) {
+            throw new IdaPersistenceException("Unable to create default encryption params", e);
+        }
 
         try {
             data = encryptionProvider.getEncryptor(params).encrypt(data);
@@ -96,7 +101,12 @@ public class EncryptingInformationDispersalPersistenceServiceImpl extends Inform
             throw new IdaPersistenceException("Unable to decode serialized encryption key from hex for data '" + id + "'", e);
         }
 
-        EncryptionParams params = encryptionProvider.createParams(key, iv);
+        EncryptionParams params;
+        try {
+            params = encryptionProvider.createParams(key, iv);
+        } catch (Exception e) {
+            throw new IdaPersistenceException("Unable to create encryption params from stored key and IV", e);
+        }
 
         try {
             data = encryptionProvider.getDecryptor(params).decrypt(data);
