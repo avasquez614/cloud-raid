@@ -91,6 +91,12 @@
                     <InformationDispersal>
                         <Class>org.cloudraid.ida.persistence.impl.EncryptingInformationDispersalPersistenceServiceImpl</Class>
 
+                        <EncryptionProvider>
+                            <Class>org.cloudraid.ida.persistence.crypto.jce.JceEncryptionProvider</Class>
+                            <CipherTransformation>AES/CBC/PKCS5Padding</CipherTransformation>
+                            <KeySize>16</KeySize>
+                        </EncryptionProvider>
+
                         <FragmentRepositories>
                             <RepositoryType>
                                 <Class>org.cloudraid.ida.persistence.impl.FilesystemFragmentRepository</Class>
