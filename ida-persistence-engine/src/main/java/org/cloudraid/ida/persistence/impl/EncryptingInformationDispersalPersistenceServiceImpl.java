@@ -69,7 +69,7 @@ public class EncryptingInformationDispersalPersistenceServiceImpl extends Inform
      *
      * @param id
      *          the ID used to identify the data in all repositories
-     * @return
+     * @return the loaded data, decrypted
      * @throws IdaPersistenceException
      */
     @Override

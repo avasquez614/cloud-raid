@@ -11,6 +11,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.cloudraid.ida.persistence.api.*;
 import org.cloudraid.ida.persistence.crypto.EncryptionKeyRepository;
+import org.cloudraid.ida.persistence.crypto.EncryptionProvider;
+import org.cloudraid.ida.persistence.crypto.jce.JceEncryptionProvider;
 import org.cloudraid.ida.persistence.impl.CrsInformationDispersalAlgorithm;
 import org.cloudraid.ida.persistence.impl.FilesystemFragmentRepository;
 import org.cloudraid.ida.persistence.impl.InformationDispersalPersistenceServiceImpl;
@@ -24,23 +26,18 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 /**
- * Implementation of {@link ObjectIdFileLoader} that uses the IDA Persistance Engine for storing/loading files.
+ * Implementation of {@link ObjectIdFileLoader} that uses the IDA Persistence Engine for storing/loading files.
  */
 public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
-    public static final int DEFAULT_REDUNDANT_FRAGMENT_NUMBER = 2;
-
     private static final Logger logger = Logger.getLogger(CloudRaidObjectIdLoader.class);
 
-    protected InformationDispersalPersistenceService persistanceService;
+    protected InformationDispersalPersistenceService persistenceService;
     protected Executor threadPoolExecutor;
 
     @Override
     public void initializeLoader(ConfigElement params, DeviceContext ctx) throws FileLoaderException, IOException {
         super.initializeLoader(params, ctx);
-
-        initThreadPoolExecutor();
-
 
         ConfigElement informationDispersalConfig = params.getChild("InformationDispersal");
         if (informationDispersalConfig == null) {
@@ -55,18 +52,15 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
         }
 
         Context context = new Context();
-        context.setFragmentRepositories(getFragmentRepositoriesFromConfig(informationDispersalConfig, context));
-        context.setFragmentMetaDataRepository((FragmentMetaDataRepository) getContext().getDBInterface());
-        context.setInformationDispersalAlgorithm(getIdaFromConfig(informationDispersalConfig, context));
-        context.setEncryptionKeyRepository((EncryptionKeyRepository) getContext().getDBInterface());
-        context.setThreadPoolExecutor(threadPoolExecutor);
 
-        persistanceService = new InformationDispersalPersistenceServiceImpl();
-        try {
-            persistanceService.init(new JlanConfiguration(informationDispersalConfig, context));
-        } catch (Exception e) {
-            throw new FileLoaderException("Failed to initialize " + persistanceService + ": " + e.getMessage());
-        }
+        context.setFragmentMetaDataRepository((FragmentMetaDataRepository) getContext().getDBInterface());
+        context.setEncryptionKeyRepository((EncryptionKeyRepository) getContext().getDBInterface());
+
+        setUpThreadPoolExecutor(context);
+        setUpFragmentRepositories(informationDispersalConfig, context);
+        setUpIda(informationDispersalConfig, context);
+        setUpEncryptionProvider(informationDispersalConfig, context);
+        setUpInformationDispersalPersistenceService(informationDispersalConfig, context);
     }
 
     @Override
@@ -76,16 +70,16 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
         if (logger.isDebugEnabled()) {
             String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
-            logger.debug("Loading data for " + fileInfoStr + " through the " + persistanceService);
+            logger.debug("Loading data for " + fileInfoStr + " through the " + persistenceService);
         }
 
         try {
-            data = persistanceService.loadData(objectId);
+            data = persistenceService.loadData(objectId);
         } catch (Exception e) {
             String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
-            logger.error("Error while loading data for " + fileInfoStr + " through the " + persistanceService, e);
+            logger.error("Error while loading data for " + fileInfoStr + " through the " + persistenceService, e);
 
-            throw new IOException("Error while loading data for " + fileInfoStr + " through the " + persistanceService, e);
+            throw new IOException("Error while loading data for " + fileInfoStr + " through the " + persistenceService, e);
         }
 
         if (logger.isDebugEnabled()) {
@@ -129,16 +123,16 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
         if (logger.isDebugEnabled()) {
             String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
-            logger.debug("Saving data for " + fileInfoStr + " through the " + persistanceService);
+            logger.debug("Saving data for " + fileInfoStr + " through the " + persistenceService);
         }
 
         try {
-            persistanceService.saveData(dataId, data);
+            persistenceService.saveData(dataId, data);
         } catch (Exception e) {
             String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
-            logger.error("Error while saving data for " + fileInfoStr + " through the " + persistanceService, e);
+            logger.error("Error while saving data for " + fileInfoStr + " through the " + persistenceService, e);
 
-            throw new IOException("Error while saving data for " + fileInfoStr + " through the " + persistanceService, e);
+            throw new IOException("Error while saving data for " + fileInfoStr + " through the " + persistenceService, e);
         }
 
         // Delete any previous data of the file/stream, so that it won't hang a long time in the repositories and thus
@@ -149,18 +143,25 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
     }
 
     /**
-     * Returns the fragment repositories for the InformationDispersalPersistenceService, given the specified config.
+     * Sets up the thread pool executor.
+     */
+    protected void setUpThreadPoolExecutor(Context context) {
+        threadPoolExecutor = Executors.newCachedThreadPool();
+
+        context.setThreadPoolExecutor(threadPoolExecutor);
+    }
+
+    /**
+     * Sets up the fragment repositories for the InformationDispersalPersistenceService, given the specified config.
      *
      * @param informationDispersalConfig
      *          the &lt;InformationDispersal&gt; config node, which should contain a &lt;FragmentRepositories&gt; config
      *          child node.
      * @param context
-     *          the IDA Persistance Engine component context.
-     * @return the fragment repositories
+     *          the IDA Persistence Engine component context.
      * @throws FileLoaderException
      */
-    protected List<FragmentRepository> getFragmentRepositoriesFromConfig(ConfigElement informationDispersalConfig,
-                                                                         Context context) throws FileLoaderException {
+    protected void setUpFragmentRepositories(ConfigElement informationDispersalConfig, Context context) throws FileLoaderException {
         List<FragmentRepository> repositories = new ArrayList<FragmentRepository>();
 
         ConfigElement reposConfig = informationDispersalConfig.getChild("FragmentRepositories");
@@ -227,7 +228,7 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
             throw new FileLoaderException("No repositories specified");
         }
 
-        return repositories;
+        context.setFragmentRepositories(repositories);
     }
 
     /**
@@ -241,18 +242,16 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
     }
 
     /**
-     * Returns the IDA for the InformationDispersalPersistenceService, given the specified config.
+     * Sets up the IDA for the InformationDispersalPersistenceService, given the specified config.
      *
      * @param informationDispersalConfig
      *          the &lt;InformationDispersal&gt; config node, which should contain a &lt;InformationDispersalAlgorithm&gt;
      *          config child node.
      * @param context
-     *          the IDA Persistance Engine component context.
-     * @return the IDA
+     *          the IDA Persistence Engine component context.
      * @throws FileLoaderException
      */
-    protected InformationDispersalAlgorithm getIdaFromConfig(ConfigElement informationDispersalConfig, Context context)
-            throws FileLoaderException {
+    protected void setUpIda(ConfigElement informationDispersalConfig, Context context) throws FileLoaderException {
         InformationDispersalAlgorithm ida;
 
         ConfigElement idaConfig = informationDispersalConfig.getChild("InformationDispersalAlgorithm");
@@ -280,14 +279,84 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
             throw new FileLoaderException("Failed to initialize " + ida.getClass().getName() + ": " + e.getMessage());
         }
 
-        return ida;
+        context.setInformationDispersalAlgorithm(ida);
     }
 
     /**
-     * Initializes the thread pool executor.
+     * Sets up the EncryptionProvider for the InformationDispersalPersistenceService, given the specified config (required only when
+     * using {@link org.cloudraid.ida.persistence.impl.EncryptingInformationDispersalPersistenceServiceImpl}).
+     *
+     * @param informationDispersalConfig
+     *          the &lt;InformationDispersal&gt; config node, which should contain a &lt;EncryptionProvider&gt;
+     *          config child node.
+     * @param context
+     *          the IDA Persistence Engine component context.
+     * @throws FileLoaderException
      */
-    protected void initThreadPoolExecutor() {
-        threadPoolExecutor = Executors.newCachedThreadPool();
+    protected void setUpEncryptionProvider(ConfigElement informationDispersalConfig, Context context) throws FileLoaderException {
+        EncryptionProvider encryptionProvider = null;
+
+        ConfigElement encryptionProviderConfig = informationDispersalConfig.getChild("EncryptionProvider");
+        if (encryptionProviderConfig != null) {
+            ConfigElement classConfig = encryptionProviderConfig.getChild("Class");
+            if (classConfig != null && StringUtils.isNotEmpty(classConfig.getValue())) {
+                ClassLoader classLoader = getClass().getClassLoader();
+                try {
+                    encryptionProvider = (EncryptionProvider) classLoader.loadClass(classConfig.getValue()).newInstance();
+                } catch (ClassNotFoundException e) {
+                    throw new FileLoaderException("Failed to load class " + classConfig.getValue());
+                } catch (Exception e) {
+                    throw new FileLoaderException("Failed to instantiate " + classConfig.getValue() + ": " + e.getMessage());
+                }
+            } else {
+                encryptionProvider = new JceEncryptionProvider();
+            }
+
+            try {
+                encryptionProvider.init(new JlanConfiguration(encryptionProviderConfig, context));
+            } catch (Exception e) {
+                throw new FileLoaderException("Failed to initialize " + encryptionProvider.getClass().getName() + ": " + e.getMessage());
+            }
+        }
+
+        if (encryptionProvider != null) {
+            context.setEncryptionProvider(encryptionProvider);
+        }
+    }
+
+    /**
+     * Sets up the InformationDispersalPersistenceService, given the specified config.
+     *
+     * @param informationDispersalConfig
+     *          the &lt;InformationDispersal&gt; config node, which should contain a &lt;Class&gt; config child node, to indicate
+     *          the class of the service
+     * @param context
+     *          the IDA Persistence Engine component context.
+     * @throws FileLoaderException
+     */
+    protected void setUpInformationDispersalPersistenceService(ConfigElement informationDispersalConfig, Context context)
+            throws FileLoaderException {
+        ConfigElement classConfig = informationDispersalConfig.getChild("Class");
+        if (classConfig != null && StringUtils.isNotEmpty(classConfig.getValue())) {
+            ClassLoader classLoader = getClass().getClassLoader();
+            try {
+                persistenceService = (InformationDispersalPersistenceService) classLoader.loadClass(classConfig.getValue()).newInstance();
+            } catch (ClassNotFoundException e) {
+                throw new FileLoaderException("Failed to load class " + classConfig.getValue());
+            } catch (Exception e) {
+                throw new FileLoaderException("Failed to instantiate " + classConfig.getValue() + ": " + e.getMessage());
+            }
+        } else {
+            persistenceService = new InformationDispersalPersistenceServiceImpl();
+        }
+
+        try {
+            persistenceService.init(new JlanConfiguration(informationDispersalConfig, context));
+        } catch (Exception e) {
+            throw new FileLoaderException("Failed to initialize " + persistenceService + ": " + e.getMessage());
+        }
+
+        context.setInformationDispersalPersistenceService(persistenceService);
     }
 
     /**
@@ -344,7 +413,7 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
                         }
 
                         try {
-                            int deletedNum = persistanceService.deleteData(dataId);
+                            int deletedNum = persistenceService.deleteData(dataId);
                             if (deletedNum == 0) {
                                 String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
                                 logger.warn("Unable to delete old saved data for " + fileInfoStr);

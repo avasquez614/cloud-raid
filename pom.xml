@@ -14,7 +14,7 @@
 
     <modules>
         <module>jigdfs</module>
-        <module>ida-persistance-engine</module>
+        <module>ida-persistence-engine</module>
         <module>server</module>
     </modules>
 

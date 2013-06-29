@@ -89,6 +89,8 @@
                     <MaximumFilesPerDirectory>1000</MaximumFilesPerDirectory>
 
                     <InformationDispersal>
+                        <Class>org.cloudraid.ida.persistence.impl.EncryptingInformationDispersalPersistenceServiceImpl</Class>
+
                         <FragmentRepositories>
                             <RepositoryType>
                                 <Class>org.cloudraid.ida.persistence.impl.FilesystemFragmentRepository</Class>
@@ -117,7 +119,7 @@
 
                         <InformationDispersalAlgorithm>
                             <Class>org.cloudraid.ida.persistence.impl.CrsInformationDispersalAlgorithm</Class>
-                            <!-- FOR NOW, THIS SHOULD BE THE SAME AS THE NUMBER OF REPOS -->
+                            <!-- FOR NOW, THIS SHOULD BE THE SAME AS THE NUMBER OF &lt;Repository&gt; -->
                             <FragmentNum>6</FragmentNum>
                             <RedundantFragmentNum>3</RedundantFragmentNum>
                         </InformationDispersalAlgorithm>
@@ -128,7 +130,8 @@
     </shares>
 
     <security>
-        <JCEProvider>cryptix.jce.provider.CryptixCrypto</JCEProvider>
+        <!-- Don't use the Cryptix JCE provider, it has been unsupported since 2005 -->
+        <JCEProvider>org.bouncycastle.jce.provider.BouncyCastleProvider</JCEProvider>
 
         <authenticator>
             <class>org.alfresco.jlan.server.auth.LocalAuthenticator</class>
