@@ -14,6 +14,7 @@
 
     <modules>
         <module>jigdfs</module>
+        <module>dropbox-client</module>
         <module>ida-persistence-engine</module>
         <module>server</module>
     </modules>
