@@ -2,6 +2,7 @@ package org.cloudraid.ida.persistence.impl;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
 import org.cloudraid.ida.persistence.api.Configuration;
 import org.cloudraid.ida.persistence.crypto.EncryptionKeyRepository;
 import org.cloudraid.ida.persistence.crypto.EncryptionParams;
@@ -15,6 +16,8 @@ import org.cloudraid.ida.persistence.exception.IdaPersistenceException;
  * @author avasquez
  */
 public class EncryptingInformationDispersalPersistenceServiceImpl extends InformationDispersalPersistenceServiceImpl {
+
+    private static final Logger logger = Logger.getLogger(EncryptingInformationDispersalPersistenceServiceImpl.class);
 
     private static final String SERIALIZED_KEY_SEPARATOR = "$";
 
@@ -59,11 +62,15 @@ public class EncryptingInformationDispersalPersistenceServiceImpl extends Inform
             throw new IdaPersistenceException("Failed to encrypt data '" + id + "'", e);
         }
 
-        String serializedKey = Hex.encodeHexString(params.getKey()) + SERIALIZED_KEY_SEPARATOR + Hex.encodeHex(params.getIv());
+        String serializedKey = Hex.encodeHexString(params.getKey()) + SERIALIZED_KEY_SEPARATOR + Hex.encodeHexString(params.getIv());
         try {
             keyRepository.saveKey(id, serializedKey);
         } catch (Exception e) {
             throw new IdaPersistenceException("Unable to save encryption key for data '" + id + "' in repository", e);
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Data '" + id + "' successfully encrypted");
         }
 
         super.saveData(id, data);
@@ -112,6 +119,10 @@ public class EncryptingInformationDispersalPersistenceServiceImpl extends Inform
             data = encryptionProvider.getDecryptor(params).decrypt(data);
         } catch (Exception e) {
             throw new IdaPersistenceException("Failed to decrypt data '" + id + "'", e);
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Data '" + id + "' successfully decrypted");
         }
 
         return data;

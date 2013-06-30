@@ -63,7 +63,7 @@ public class DropboxFragmentRepository implements FragmentRepository {
         }
 
         dropboxClient = new DropboxClient(appKeyPair, accessTokenPair, rootPath);
-        repositoryUrl = "dropbox://" + uid + "/" + rootPath;
+        repositoryUrl = "dropbox://" + uid + (rootPath.startsWith("/")? "" : "/") + rootPath;
     }
 
     @Override

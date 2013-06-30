@@ -538,11 +538,13 @@ public class CloudRaidMySqlDbInterface extends MySQLDBInterface implements Fragm
             conn = getConnection();
             pstmt = conn.prepareStatement(
                     "INSERT INTO " + getEncryptionKeysTableName() + " " +
-                    "VALUES (?, ?);"
+                    "VALUES (?, ?) " +
+                    "ON DUPLICATE KEY UPDATE EncryptionKey = ?;"
             );
 
             pstmt.setString(1, dataId);
             pstmt.setString(2, key);
+            pstmt.setString(3, key);
 
             pstmt.executeUpdate();
         } catch (SQLException e) {

@@ -102,6 +102,10 @@
                                 <Class>org.cloudraid.ida.persistence.impl.FilesystemFragmentRepository</Class>
                                 <Type>file</Type>
                             </RepositoryType>
+                            <RepositoryType>
+                                <Class>org.cloudraid.ida.persistence.impl.DropboxFragmentRepository</Class>
+                                <Type>dropbox</Type>
+                            </RepositoryType>
 
                             <Repository type="file">
                                 <Url>/var/lib/cloud-raid/repos/test1</Url>
@@ -121,6 +125,32 @@
                             <Repository type="file">
                                 <Url>/var/lib/cloud-raid/repos/test6</Url>
                             </Repository>
+                            <!--
+                            <Repository type="dropbox">
+                                <UID>7972253</UID>
+                                <RootPath>/cloud-raid/repo1</RootPath>
+                            </Repository>
+                            <Repository type="dropbox">
+                                <UID>7972253</UID>
+                                <RootPath>/cloud-raid/repo2</RootPath>
+                            </Repository>
+                            <Repository type="dropbox">
+                                <UID>7972253</UID>
+                                <RootPath>/cloud-raid/repo3</RootPath>
+                            </Repository>
+                            <Repository type="dropbox">
+                                <UID>187882908</UID>
+                                <RootPath>/cloud-raid/repo4</RootPath>
+                            </Repository>
+                            <Repository type="dropbox">
+                                <UID>187882908</UID>
+                                <RootPath>/cloud-raid/repo5</RootPath>
+                            </Repository>
+                            <Repository type="dropbox">
+                                <UID>187882908</UID>
+                                <RootPath>/cloud-raid/repo6</RootPath>
+                            </Repository>
+                            -->
                         </FragmentRepositories>
 
                         <InformationDispersalAlgorithm>
