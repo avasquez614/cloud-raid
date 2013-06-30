@@ -1,16 +1,17 @@
 package org.cloudraid.dropbox;
 
 import com.dropbox.client2.DropboxAPI;
+import com.dropbox.client2.ProgressListener;
 import com.dropbox.client2.session.AccessTokenPair;
 import com.dropbox.client2.session.AppKeyPair;
 import com.dropbox.client2.session.Session;
 import com.dropbox.client2.session.WebAuthSession;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 
 /**
  * Client interface to a Dropbox account.
@@ -19,13 +20,17 @@ import java.io.InputStream;
  */
 public class DropboxClient {
 
-    private static final int INITIAL_BUFFER_SIZE = 1024;
+    private static final int INITIAL_BUFFER_SIZE = 4096;
+    private static final int PROGRESS_INTERVAL = 10000; // 10 secs
 
+    private static final Logger logger = Logger.getLogger(DropboxClient.class);
+
+    private String uid;
     private AppKeyPair appKeyPair;
     private AccessTokenPair accessTokenPair;
     private String rootPath;
 
-    public DropboxClient(AppKeyPair appKeyPair, AccessTokenPair accessTokenPair, String rootPath) {
+    public DropboxClient(String uid, AppKeyPair appKeyPair, AccessTokenPair accessTokenPair, String rootPath) {
         if (!rootPath.startsWith("/")) {
             rootPath = "/" + rootPath;
         }
@@ -33,12 +38,11 @@ public class DropboxClient {
             StringUtils.stripEnd(rootPath, "/");
         }
 
+        this.uid = uid;
         this.appKeyPair = appKeyPair;
         this.accessTokenPair = accessTokenPair;
         this.rootPath = rootPath;
     }
-
-
 
     /**
      * Downloads the file from the given path in the Dropbox account.
@@ -54,15 +58,17 @@ public class DropboxClient {
         ByteArrayOutputStream tempOut = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE);
 
         String fullPath = getFullPath(path);
-        InputStream fileIn = null;
+        ProgressListener progressListener = null;
+
+        if (logger.isDebugEnabled()) {
+            progressListener = new LoggingProgressListener("Downloaded", PROGRESS_INTERVAL, fullPath);
+        }
+
         // Download the file
         try {
-            fileIn = client.getFileStream(fullPath, null);
-            IOUtils.copy(fileIn, tempOut);
+            client.getFile(fullPath, null, tempOut, progressListener);
         } catch (Exception e) {
-            throw new DropboxClientException("Error while trying to download file '" + fullPath + "' from Dropbox", e);
-        } finally {
-            IOUtils.closeQuietly(fileIn);
+            throw new DropboxClientException("Error while trying to download file '" + fullPath + "' from Dropbox acct '" + uid + "'", e);
         }
 
         return tempOut.toByteArray();
@@ -83,11 +89,17 @@ public class DropboxClient {
         ByteArrayInputStream tempIn = new ByteArrayInputStream(content);
 
         String fullPath = getFullPath(path);
+        ProgressListener progressListener = null;
+
+        if (logger.isDebugEnabled()) {
+            progressListener = new LoggingProgressListener("Uploaded", PROGRESS_INTERVAL, fullPath);
+        }
+
         // Upload the file
         try {
-            client.putFileOverwrite(fullPath, tempIn, content.length, null);
+            client.putFileOverwrite(fullPath, tempIn, content.length, progressListener);
         } catch (Exception e) {
-            throw new DropboxClientException("Error while trying to upload file '" + fullPath + "' to Dropbox", e);
+            throw new DropboxClientException("Error while trying to upload file '" + fullPath + "' to Dropbox acct '" + uid + "'", e);
         }
     }
 
@@ -106,7 +118,7 @@ public class DropboxClient {
         try {
             client.delete(fullPath);
         } catch (Exception e) {
-            throw new DropboxClientException("Error while trying to delete file '" + fullPath + "' from Dropbox", e);
+            throw new DropboxClientException("Error while trying to delete file '" + fullPath + "' from Dropbox acct '" + uid + "'", e);
         }
     }
 
@@ -122,6 +134,32 @@ public class DropboxClient {
         }
 
         return rootPath + relativePath;
+    }
+
+    private class LoggingProgressListener extends ProgressListener {
+
+        private String action;
+        private long interval;
+        private String fullPath;
+
+        private LoggingProgressListener(String action, long interval, String fullPath) {
+            this.action = action;
+            this.interval = interval;
+            this.fullPath = fullPath;
+        }
+
+        @Override
+        public void onProgress(long bytes, long total) {
+            long percentageDone = Math.round((((double) bytes) * 100D) / ((double) total));
+
+            logger.debug(action + " " + FileUtils.byteCountToDisplaySize(bytes) + "/" + FileUtils.byteCountToDisplaySize(total) +
+                    "  (" + percentageDone + "%) of file dropbox://" + uid + "/" + fullPath);
+        }
+
+        @Override
+        public long progressInterval() {
+            return interval;
+        }
     }
 
 }

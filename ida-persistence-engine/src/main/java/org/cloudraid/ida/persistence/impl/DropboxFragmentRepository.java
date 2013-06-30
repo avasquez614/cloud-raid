@@ -62,7 +62,7 @@ public class DropboxFragmentRepository implements FragmentRepository {
             throw new RepositoryException("No AccessTokenPair found for uid '" + uid + "' in DropboxContext");
         }
 
-        dropboxClient = new DropboxClient(appKeyPair, accessTokenPair, rootPath);
+        dropboxClient = new DropboxClient(uid, appKeyPair, accessTokenPair, rootPath);
         repositoryUrl = "dropbox://" + uid + (rootPath.startsWith("/")? "" : "/") + rootPath;
     }
 
