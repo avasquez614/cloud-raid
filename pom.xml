@@ -17,6 +17,7 @@
         <module>dropbox-client</module>
         <module>ida-persistence-engine</module>
         <module>server</module>
+        <module>crypto-cli</module>
     </modules>
 
     <licenses>

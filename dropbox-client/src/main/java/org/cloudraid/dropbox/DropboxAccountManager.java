@@ -37,8 +37,8 @@ public class DropboxAccountManager {
 
     private static void printUsage(PrintStream out) {
         out.println("Usage:");
-        out.println("    ./dropboxaccts reset <app-key> <secret>   Initialize the context with the given app key.");
-        out.println("    ./dropboxaccts link                       Link an account to the app.");
+        out.println("    ./dropbox reset <app-key> <secret>   Initialize the context with the given app key.");
+        out.println("    ./dropbox link                       Link an account to the app.");
     }
 
     /**

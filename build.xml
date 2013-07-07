@@ -10,7 +10,7 @@
         <copy todir="build" file="resources/jlanConfig.xml"/>
         <copy todir="build" file="resources/jlanserver.dtd"/>
         <copy todir="build" file="resources/log4j.xml"/>
-        <copy todir="build" file="resources/dropboxaccts.sh"/>
+        <copy todir="build" file="resources/dropbox.sh"/>
         <copy todir="build" file="resources/dropboxContext.xml"/>
 
         <copy todir="build/service">
@@ -32,7 +32,7 @@
         <copy todir="build/jars" file="server/target/cloud-raid-server.jar"/>
 
         <chmod file="build/runsrv.sh" perm="755"/>
-        <chmod file="build/dropboxaccts.sh" perm="755"/>
+        <chmod file="build/dropbox.sh" perm="755"/>
     </target>
 
 </project>
