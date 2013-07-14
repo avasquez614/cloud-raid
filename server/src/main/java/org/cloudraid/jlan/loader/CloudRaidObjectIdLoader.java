@@ -70,30 +70,32 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
         if (logger.isDebugEnabled()) {
             String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
-            logger.debug("Loading data for " + fileInfoStr + " through the " + persistenceService);
+            logger.debug("Loading data of " + fileInfoStr);
         }
 
         try {
             data = persistenceService.loadData(objectId);
         } catch (Exception e) {
             String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
-            logger.error("Error while loading data for " + fileInfoStr + " through the " + persistenceService, e);
+            logger.error("Error while loading data of " + fileInfoStr, e);
 
-            throw new IOException("Error while loading data for " + fileInfoStr + " through the " + persistenceService, e);
+            throw new IOException("Error while loading data of " + fileInfoStr, e);
         }
 
         if (logger.isDebugEnabled()) {
             String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
-            logger.debug("Writing data for " + fileInfoStr + " to temp file " + dataFile);
+
+            logger.debug("Finished loading data of " + fileInfoStr);
+            logger.debug("Writing data of " + fileInfoStr + " to temp file " + dataFile);
         }
 
         try {
             FileUtils.writeByteArrayToFile(dataFile, data);
         } catch (IOException e) {
             String fileInfoStr = getFileInfoString(fileId, streamId, objectId);
-            logger.error("Unable to write data for " + fileInfoStr + " to temp file " + dataFile, e);
+            logger.error("Unable to write data of " + fileInfoStr + " to temp file " + dataFile, e);
 
-            throw new IOException("Unable to write data for " + fileInfoStr + " to temp file " + dataFile, e);
+            throw new IOException("Unable to write data of " + fileInfoStr + " to temp file " + dataFile, e);
         }
 
         fileSeg.setReadableLength(data.length);
@@ -107,32 +109,37 @@ public class CloudRaidObjectIdLoader extends ObjectIdFileLoader {
 
         if (logger.isDebugEnabled()) {
             String fileInfoStr = getFileInfoString(fileId, streamId, null);
-            logger.debug("Reading data for " + fileInfoStr + " from temp file " + dataFile);
+            logger.debug("Reading data of " + fileInfoStr + " from temp file " + dataFile);
         }
 
         try {
             data = FileUtils.readFileToByteArray(dataFile);
         } catch (Exception e) {
             String fileInfoStr = getFileInfoString(fileId, streamId, null);
-            logger.error("Unable to read data for " + fileInfoStr + " from temp file " + dataFile, e);
+            logger.error("Unable to read data of " + fileInfoStr + " from temp file " + dataFile, e);
 
-            throw new IOException("Unable to read data for " + fileInfoStr + " from temp file " + dataFile, e);
+            throw new IOException("Unable to read data of " + fileInfoStr + " from temp file " + dataFile, e);
         }
 
         String dataId = createDataId(fileId, streamId, data);
 
         if (logger.isDebugEnabled()) {
             String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
-            logger.debug("Saving data for " + fileInfoStr + " through the " + persistenceService);
+            logger.debug("Saving data of " + fileInfoStr);
         }
 
         try {
             persistenceService.saveData(dataId, data);
         } catch (Exception e) {
             String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
-            logger.error("Error while saving data for " + fileInfoStr + " through the " + persistenceService, e);
+            logger.error("Error while saving data of " + fileInfoStr, e);
 
-            throw new IOException("Error while saving data for " + fileInfoStr + " through the " + persistenceService, e);
+            throw new IOException("Error while saving data of " + fileInfoStr, e);
+        }
+
+        if (logger.isDebugEnabled()) {
+            String fileInfoStr = getFileInfoString(fileId, streamId, dataId);
+            logger.debug("Finished saving data of " + fileInfoStr);
         }
 
         // Delete any previous data of the file/stream, so that it won't hang a long time in the repositories and thus

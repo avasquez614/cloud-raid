@@ -48,6 +48,8 @@
 
     <NFS>
         <enablePortMapper/>
+        <!-- Keep mount server port fixed for firewalls -->
+        <MountServerPort>4002</MountServerPort>
         <debug flags="Search,File,FileIO,Error"/>
     </NFS>
 
@@ -93,7 +95,8 @@
 
                         <EncryptionProvider>
                             <Class>org.cloudraid.ida.persistence.crypto.jce.JceEncryptionProvider</Class>
-                            <CipherTransformation>AES/CBC/PKCS5Padding</CipherTransformation>
+                            <!--CipherTransformation>AES/CBC/PKCS5Padding</CipherTransformation-->
+                            <CipherTransformation>AES/CTR/NoPadding</CipherTransformation>
                             <KeySize>16</KeySize>
                         </EncryptionProvider>
 
@@ -176,13 +179,10 @@
         </authenticator>
 
         <users>
-            <user name="cloudraidsrv">
+            <user name="cloudraid">
                 <password>cloudraid</password>
                 <comment>System administrator</comment>
                 <administrator/>
-            </user>
-            <user name="avasquez">
-                <password>avasquez</password>
             </user>
         </users>
     </security>

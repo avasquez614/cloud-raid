@@ -68,7 +68,11 @@ public class DropboxClient {
         try {
             client.getFile(fullPath, null, tempOut, progressListener);
         } catch (Exception e) {
-            throw new DropboxClientException("Error while trying to download file '" + fullPath + "' from Dropbox acct '" + uid + "'", e);
+            throw new DropboxClientException("Error while trying to download file dropbox://" + uid + fullPath, e);
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Finished downloading file dropbox://" + uid + fullPath);
         }
 
         return tempOut.toByteArray();
@@ -99,7 +103,11 @@ public class DropboxClient {
         try {
             client.putFileOverwrite(fullPath, tempIn, content.length, progressListener);
         } catch (Exception e) {
-            throw new DropboxClientException("Error while trying to upload file '" + fullPath + "' to Dropbox acct '" + uid + "'", e);
+            throw new DropboxClientException("Error while trying to upload file dropbox://" + uid + fullPath, e);
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Finished uploading file dropbox://" + uid + fullPath);
         }
     }
 
@@ -118,7 +126,11 @@ public class DropboxClient {
         try {
             client.delete(fullPath);
         } catch (Exception e) {
-            throw new DropboxClientException("Error while trying to delete file '" + fullPath + "' from Dropbox acct '" + uid + "'", e);
+            throw new DropboxClientException("Error while trying to delete file dropbox://" + uid + fullPath, e);
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Finished deleting file dropbox://" + uid + fullPath);
         }
     }
 
@@ -153,7 +165,7 @@ public class DropboxClient {
             long percentageDone = Math.round((((double) bytes) * 100D) / ((double) total));
 
             logger.debug(action + " " + FileUtils.byteCountToDisplaySize(bytes) + "/" + FileUtils.byteCountToDisplaySize(total) +
-                    "  (" + percentageDone + "%) of file dropbox://" + uid + "/" + fullPath);
+                    "  (" + percentageDone + "%) of file dropbox://" + uid + fullPath);
         }
 
         @Override
