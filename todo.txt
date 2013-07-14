@@ -1,10 +1,11 @@
 TODO:
 =====
 
-* Check if there's a way to tell JLan to not close NFS when downloading big file.
+* Check if there's a way to tell JLan to not close NFS when downloading big file. Maybe break files in chunks?
 * Add checksum checking for integrity.
 * Add a delete to ObjectIdFileLoader.
 * Sync database and remote cloud repos to delete orphaned fragments.
 * Use FragmentRepositories in a least-used basis.
 * Refactor and optimize the JLan code.
+* Try to test other IDAs.
 * Add versioning if possible (need to investigate on this).
