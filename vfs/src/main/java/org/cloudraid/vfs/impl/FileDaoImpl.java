@@ -14,19 +14,21 @@ import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Default implementation of {@link FileDao}, using Spring JDBC template.
+ * Default implementation of {@link FileDao}, using Spring JDBC templates.
  *
  * @author avasquez
  */
 public class FileDaoImpl implements FileDao {
 
-    private String selectFileByIdSql;
-    private String selectFileByPathSql;
-    private String updateFileSql;
-    private String deleteFileSql;
+    private String findByIdSql;
+    private String findByPathSql;
+    private String findDirChildrenByPathSql;
+    private String updateSql;
+    private String deleteSql;
 
     private JdbcTemplate jdbcTemplate;
     private SimpleJdbcInsert insertFile;
@@ -37,23 +39,28 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Required
-    public void setSelectFileByIdSql(String selectFileByIdSql) {
-        this.selectFileByIdSql = selectFileByIdSql;
+    public void setFindByIdSql(String findByIdSql) {
+        this.findByIdSql = findByIdSql;
     }
 
     @Required
-    public void setSelectFileByPathSql(String selectFileByPathSql) {
-        this.selectFileByPathSql = selectFileByPathSql;
+    public void setFindByPathSql(String findByPathSql) {
+        this.findByPathSql = findByPathSql;
     }
 
     @Required
-    public void setUpdateFileSql(String updateFileSql) {
-        this.updateFileSql = updateFileSql;
+    public void setFindDirChildrenByPathSql(String findDirChildrenByPathSql) {
+        this.findDirChildrenByPathSql = findDirChildrenByPathSql;
     }
 
     @Required
-    public void setDeleteFileSql(String deleteFileSql) {
-        this.deleteFileSql = deleteFileSql;
+    public void setUpdateSql(String updateSql) {
+        this.updateSql = updateSql;
+    }
+
+    @Required
+    public void setDeleteSql(String deleteSql) {
+        this.deleteSql = deleteSql;
     }
 
     @Required
@@ -63,25 +70,34 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public File getFileById(Object id) throws DaoException {
+    public File findById(Object id) throws DaoException {
         try {
-            return jdbcTemplate.queryForObject(selectFileByIdSql, fileRowMapper, id);
+            return jdbcTemplate.queryForObject(findByIdSql, fileRowMapper, id);
         } catch (DataAccessException e) {
             throw new DaoException(e.getMessage(), e);
         }
     }
 
     @Override
-    public File getFileByPath(String path) throws DaoException {
+    public File findByPath(String path) throws DaoException {
         try {
-            return jdbcTemplate.queryForObject(selectFileByPathSql, fileRowMapper, path);
+            return jdbcTemplate.queryForObject(findByPathSql, fileRowMapper, path);
         } catch (DataAccessException e) {
             throw new DaoException(e.getMessage(), e);
         }
     }
 
     @Override
-    public void saveFile(File file) throws DaoException {
+    public List<File> findDirChildrenByPath(String dirPath) throws DaoException {
+        try {
+            return jdbcTemplate.query(findDirChildrenByPathSql, fileRowMapper, dirPath);
+        } catch (DataAccessException e) {
+            throw new DaoException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void save(File file) throws DaoException {
         Map<String, Object> params = new HashMap<>(12);
         params.put("path", file.getPath());
         params.put("uid", file.getUid());
@@ -89,9 +105,9 @@ public class FileDaoImpl implements FileDao {
         params.put("size", file.getSize());
         params.put("mode", file.getMode());
         params.put("isDir", file.isDir());
-        params.put("createdDate", file.getCreatedDate());
-        params.put("accessDate", file.getAccessDate());
-        params.put("changeDate", file.getChangeDate());
+        params.put("lastAccess", file.getLastAccess());
+        params.put("lastModified", file.getLastModified());
+        params.put("lastStatusChange", file.getLastStatusChange());
         params.put("chunkSize", file.getChunkSize());
         params.put("parentDirId", file.getParentDirId());
         params.put("symLinkTargetId", file.getSymLinkTargetId());
@@ -110,18 +126,18 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public void updateFile(File file) throws DaoException {
+    public void update(File file) throws DaoException {
         try {
-            jdbcTemplate.update(updateFileSql,
+            jdbcTemplate.update(updateSql,
                     file.getPath(),
                     file.getUid(),
                     file.getGuid(),
                     file.getSize(),
                     file.getMode(),
                     file.isDir(),
-                    file.getCreatedDate(),
-                    file.getAccessDate(),
-                    file.getChangeDate(),
+                    file.getLastAccess(),
+                    file.getLastModified(),
+                    file.getLastStatusChange(),
                     file.getChunkSize(),
                     file.getParentDirId(),
                     file.getSymLinkTargetId());
@@ -131,9 +147,9 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public void deleteFile(Object id) throws DaoException {
+    public void delete(Object id) throws DaoException {
         try {
-            jdbcTemplate.update(deleteFileSql, id);
+            jdbcTemplate.update(deleteSql, id);
         } catch (DataAccessException e) {
             throw new DaoException(e.getMessage(), e);
         }
@@ -151,9 +167,9 @@ public class FileDaoImpl implements FileDao {
             file.setSize(rs.getLong("size"));
             file.setMode(rs.getLong("mode"));
             file.setDir(rs.getBoolean("isDir"));
-            file.setCreatedDate(rs.getDate("createdDate"));
-            file.setAccessDate(rs.getDate("accessDate"));
-            file.setChangeDate(rs.getDate("changeDate"));
+            file.setLastAccess(rs.getDate("lastAccess"));
+            file.setLastModified(rs.getDate("lastModified"));
+            file.setLastStatusChange(rs.getDate("lastStatusChange"));
             file.setChunkSize(rs.getLong("chunkSize"));
             file.setParentDirId(rs.getObject("parentDirId"));
             file.setSymLinkTargetId(rs.getObject("symLinkTargetId"));

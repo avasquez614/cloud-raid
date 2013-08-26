@@ -3,7 +3,7 @@ package org.cloudraid.vfs.api;
 import java.util.Date;
 
 /**
- * Represents a file or directory metadata in the virtual filesystem.
+ * Represents a file in the virtual filesystem.
  *
  * @author avasquez
  */
@@ -16,9 +16,9 @@ public class File {
     private long size;
     private long mode;
     private boolean dir;
-    private Date createdDate;
-    private Date accessDate;
-    private Date changeDate;
+    private Date lastAccess;
+    private Date lastModified;
+    private Date lastStatusChange;
     private long chunkSize;
     private Object parentDirId;
     private Object symLinkTargetId;
@@ -79,28 +79,28 @@ public class File {
         this.dir = dir;
     }
 
-    public Date getCreatedDate() {
-        return createdDate;
+    public Date getLastAccess() {
+        return lastAccess;
     }
 
-    public void setCreatedDate(Date createdDate) {
-        this.createdDate = createdDate;
+    public void setLastAccess(Date lastAccess) {
+        this.lastAccess = lastAccess;
     }
 
-    public Date getAccessDate() {
-        return accessDate;
+    public Date getLastModified() {
+        return lastModified;
     }
 
-    public void setAccessDate(Date accessDate) {
-        this.accessDate = accessDate;
+    public void setLastModified(Date lastModified) {
+        this.lastModified = lastModified;
     }
 
-    public Date getChangeDate() {
-        return changeDate;
+    public Date getLastStatusChange() {
+        return lastStatusChange;
     }
 
-    public void setChangeDate(Date changeDate) {
-        this.changeDate = changeDate;
+    public void setLastStatusChange(Date lastStatusChange) {
+        this.lastStatusChange = lastStatusChange;
     }
 
     public long getChunkSize() {
