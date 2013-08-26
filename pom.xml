@@ -16,8 +16,10 @@
         <module>jigdfs</module>
         <module>dropbox-client</module>
         <module>ida-persistence-engine</module>
-        <module>server</module>
+        <!-- TODO: Remove module later -->
+        <!--module>server</module-->
         <module>crypto-cli</module>
+        <module>vfs</module>
     </modules>
 
     <licenses>
@@ -47,6 +49,14 @@
         <alfresco.version>4.2.c</alfresco.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>springsource-repo</id>
+            <name>SpringSource Repository</name>
+            <url>http://repo.springsource.org/release</url>
+        </repository>
+    </repositories>
+
     <build>
         <plugins>
             <plugin>
@@ -54,8 +64,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
             </plugin>
         </plugins>
