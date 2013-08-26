@@ -1,8 +1,11 @@
 package org.cloudraid.vfs.impl;
 
+import org.cloudraid.commons.exception.DaoException;
+import org.cloudraid.commons.exception.DuplicateKeyException;
 import org.cloudraid.vfs.api.File;
 import org.cloudraid.vfs.api.FileDao;
 import org.springframework.beans.factory.annotation.Required;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -60,17 +63,25 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public File getFileById(Object id) {
-        return jdbcTemplate.queryForObject(selectFileByIdSql, fileRowMapper, id);
+    public File getFileById(Object id) throws DaoException {
+        try {
+            return jdbcTemplate.queryForObject(selectFileByIdSql, fileRowMapper, id);
+        } catch (DataAccessException e) {
+            throw new DaoException(e.getMessage(), e);
+        }
     }
 
     @Override
-    public File getFileByPath(String path) {
-        return jdbcTemplate.queryForObject(selectFileByPathSql, fileRowMapper, path);
+    public File getFileByPath(String path) throws DaoException {
+        try {
+            return jdbcTemplate.queryForObject(selectFileByPathSql, fileRowMapper, path);
+        } catch (DataAccessException e) {
+            throw new DaoException(e.getMessage(), e);
+        }
     }
 
     @Override
-    public void saveFile(File file) {
+    public void saveFile(File file) throws DaoException {
         Map<String, Object> params = new HashMap<>(12);
         params.put("path", file.getPath());
         params.put("uid", file.getUid());
@@ -85,31 +96,47 @@ public class FileDaoImpl implements FileDao {
         params.put("parentDirId", file.getParentDirId());
         params.put("symLinkTargetId", file.getSymLinkTargetId());
 
-        Object id = insertFile.executeAndReturnKey(params);
+
+        Object id = null;
+        try {
+            insertFile.executeAndReturnKey(params);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            throw new DuplicateKeyException(e.getMessage(), e);
+        } catch (DataAccessException e) {
+            throw new DaoException(e.getMessage(), e);
+        }
 
         file.setId(id);
     }
 
     @Override
-    public void updateFile(File file) {
-        jdbcTemplate.update(updateFileSql,
-                file.getPath(),
-                file.getUid(),
-                file.getGuid(),
-                file.getSize(),
-                file.getMode(),
-                file.isDir(),
-                file.getCreatedDate(),
-                file.getAccessDate(),
-                file.getChangeDate(),
-                file.getChunkSize(),
-                file.getParentDirId(),
-                file.getSymLinkTargetId());
+    public void updateFile(File file) throws DaoException {
+        try {
+            jdbcTemplate.update(updateFileSql,
+                    file.getPath(),
+                    file.getUid(),
+                    file.getGuid(),
+                    file.getSize(),
+                    file.getMode(),
+                    file.isDir(),
+                    file.getCreatedDate(),
+                    file.getAccessDate(),
+                    file.getChangeDate(),
+                    file.getChunkSize(),
+                    file.getParentDirId(),
+                    file.getSymLinkTargetId());
+        } catch (DataAccessException e) {
+            throw new DaoException(e.getMessage(), e);
+        }
     }
 
     @Override
-    public void deleteFile(Object id) {
-        jdbcTemplate.update(deleteFileSql, id);
+    public void deleteFile(Object id) throws DaoException {
+        try {
+            jdbcTemplate.update(deleteFileSql, id);
+        } catch (DataAccessException e) {
+            throw new DaoException(e.getMessage(), e);
+        }
     }
 
     private static class FileRowMapper implements RowMapper<File> {
