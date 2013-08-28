@@ -1,9 +1,9 @@
-package org.cloudraid.vfs.impl;
+package org.cloudraid.vfs.dao.jdbc;
 
 import org.cloudraid.commons.exception.DaoException;
 import org.cloudraid.commons.exception.DuplicateKeyException;
 import org.cloudraid.vfs.api.File;
-import org.cloudraid.vfs.api.FileDao;
+import org.cloudraid.vfs.dao.FileDao;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Default implementation of {@link FileDao}, using Spring JDBC templates.
+ * Default implementation of {@link org.cloudraid.vfs.dao.FileDao}, using Spring JDBC templates.
  *
  * @author avasquez
  */
-public class FileDaoImpl implements FileDao {
+public class JdbcFileDao implements FileDao {
 
     private String findByIdSql;
     private String findByPathSql;
@@ -34,7 +34,7 @@ public class FileDaoImpl implements FileDao {
     private SimpleJdbcInsert insertFile;
     private FileRowMapper fileRowMapper;
 
-    public FileDaoImpl() {
+    public JdbcFileDao() {
         this.fileRowMapper = new FileRowMapper();
     }
 
@@ -70,7 +70,7 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public File findById(Object id) throws DaoException {
+    public File findFileById(Object id) throws DaoException {
         try {
             return jdbcTemplate.queryForObject(findByIdSql, fileRowMapper, id);
         } catch (DataAccessException e) {
@@ -79,7 +79,7 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public File findByPath(String path) throws DaoException {
+    public File findFileByPath(String path) throws DaoException {
         try {
             return jdbcTemplate.queryForObject(findByPathSql, fileRowMapper, path);
         } catch (DataAccessException e) {
@@ -97,7 +97,7 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public void save(File file) throws DaoException {
+    public void saveFile(File file) throws DaoException {
         Map<String, Object> params = new HashMap<>(12);
         params.put("path", file.getPath());
         params.put("uid", file.getUid());
@@ -126,7 +126,7 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public void update(File file) throws DaoException {
+    public void updateFile(File file) throws DaoException {
         try {
             jdbcTemplate.update(updateSql,
                     file.getPath(),
@@ -147,7 +147,7 @@ public class FileDaoImpl implements FileDao {
     }
 
     @Override
-    public void delete(Object id) throws DaoException {
+    public void deleteFile(Object id) throws DaoException {
         try {
             jdbcTemplate.update(deleteSql, id);
         } catch (DataAccessException e) {

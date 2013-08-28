@@ -1,11 +1,12 @@
-package org.cloudraid.vfs.api;
+package org.cloudraid.vfs.dao;
 
 import org.cloudraid.commons.exception.DaoException;
+import org.cloudraid.vfs.api.File;
 
 import java.util.List;
 
 /**
- * Data access object for {@link File}s.
+ * Data access object for {@link org.cloudraid.vfs.api.File}s.
  *
  * @author avasquez
  */
@@ -18,23 +19,23 @@ public interface FileDao {
      *          the ID of the file
      * @return the file associated to the given ID, or null if not found
      */
-    File findById(Object id) throws DaoException;
+    File findFileById(Object id) throws DaoException;
 
     /**
      * Returns the file associated to the given path.
      *
      * @param path
      *          the path of the file or directory in the VFS
-     * @return the file associated to the given path
+     * @return the file associated to the given path, or null if not found
      */
-    File findByPath(String path) throws DaoException;
+    File findFileByPath(String path) throws DaoException;
 
     /**
      * Returns the files and directories under the directory specified by the path.
      *
      * @param dirPath
      *          the path of the directory
-     * @return the list of children
+     * @return the list of children, or null if the directory is empty
      */
     List<File> findDirChildrenByPath(String dirPath) throws DaoException;
 
@@ -44,7 +45,7 @@ public interface FileDao {
      * @param file
      *          the file to save
      */
-    void save(File file) throws DaoException;
+    void saveFile(File file) throws DaoException;
 
     /**
      * Updates the specified file.
@@ -52,7 +53,7 @@ public interface FileDao {
      * @param file
      *          the file to update
      */
-    void update(File file) throws DaoException;
+    void updateFile(File file) throws DaoException;
 
     /**
      * Deletes the file associated to the given ID.
@@ -60,6 +61,6 @@ public interface FileDao {
      * @param id
      *          the ID of the file to delete
      */
-    void delete(Object id) throws DaoException;
+    void deleteFile(Object id) throws DaoException;
 
 }
