@@ -24,11 +24,11 @@ public interface ChunkDao {
     /**
      * Returns all chunks of the file associated to the given ID.
      *
-     * @param id
+     * @param fileId
      *          the file ID
      * @return all the chunks of the file, or null if no chunks for the file
      */
-    List<Chunk> findChunksByFileId(Object id) throws DaoException;
+    List<Chunk> findChunksByFileId(Object fileId) throws DaoException;
 
     /**
      * Saves the specified chunk. Also sets the generated ID in the chunk.

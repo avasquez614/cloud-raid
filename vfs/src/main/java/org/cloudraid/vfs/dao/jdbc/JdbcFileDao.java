@@ -18,34 +18,34 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Default implementation of {@link org.cloudraid.vfs.dao.FileDao}, using Spring JDBC templates.
+ * Default implementation of {@link FileDao}, using Spring JDBC templates.
  *
  * @author avasquez
  */
 public class JdbcFileDao implements FileDao {
 
-    private String findByIdSql;
-    private String findByPathSql;
+    private String findFileByIdSql;
+    private String findFileByPathSql;
     private String findDirChildrenByPathSql;
-    private String updateSql;
-    private String deleteSql;
+    private String updateFileSql;
+    private String deleteFileSql;
 
     private JdbcTemplate jdbcTemplate;
     private SimpleJdbcInsert insertFile;
-    private FileRowMapper fileRowMapper;
+    private FileRowMapper rowMapper;
 
     public JdbcFileDao() {
-        this.fileRowMapper = new FileRowMapper();
+        this.rowMapper = new FileRowMapper();
     }
 
     @Required
-    public void setFindByIdSql(String findByIdSql) {
-        this.findByIdSql = findByIdSql;
+    public void setFindFileByIdSql(String findFileByIdSql) {
+        this.findFileByIdSql = findFileByIdSql;
     }
 
     @Required
-    public void setFindByPathSql(String findByPathSql) {
-        this.findByPathSql = findByPathSql;
+    public void setFindFileByPathSql(String findFileByPathSql) {
+        this.findFileByPathSql = findFileByPathSql;
     }
 
     @Required
@@ -54,13 +54,13 @@ public class JdbcFileDao implements FileDao {
     }
 
     @Required
-    public void setUpdateSql(String updateSql) {
-        this.updateSql = updateSql;
+    public void setUpdateFileSql(String updateFileSql) {
+        this.updateFileSql = updateFileSql;
     }
 
     @Required
-    public void setDeleteSql(String deleteSql) {
-        this.deleteSql = deleteSql;
+    public void setDeleteFileSql(String deleteFileSql) {
+        this.deleteFileSql = deleteFileSql;
     }
 
     @Required
@@ -72,7 +72,7 @@ public class JdbcFileDao implements FileDao {
     @Override
     public File findFileById(Object id) throws DaoException {
         try {
-            return jdbcTemplate.queryForObject(findByIdSql, fileRowMapper, id);
+            return jdbcTemplate.queryForObject(findFileByIdSql, rowMapper, id);
         } catch (DataAccessException e) {
             throw new DaoException(e.getMessage(), e);
         }
@@ -81,7 +81,7 @@ public class JdbcFileDao implements FileDao {
     @Override
     public File findFileByPath(String path) throws DaoException {
         try {
-            return jdbcTemplate.queryForObject(findByPathSql, fileRowMapper, path);
+            return jdbcTemplate.queryForObject(findFileByPathSql, rowMapper, path);
         } catch (DataAccessException e) {
             throw new DaoException(e.getMessage(), e);
         }
@@ -90,7 +90,7 @@ public class JdbcFileDao implements FileDao {
     @Override
     public List<File> findDirChildrenByPath(String dirPath) throws DaoException {
         try {
-            return jdbcTemplate.query(findDirChildrenByPathSql, fileRowMapper, dirPath);
+            return jdbcTemplate.query(findDirChildrenByPathSql, rowMapper, dirPath);
         } catch (DataAccessException e) {
             throw new DaoException(e.getMessage(), e);
         }
@@ -128,8 +128,7 @@ public class JdbcFileDao implements FileDao {
     @Override
     public void updateFile(File file) throws DaoException {
         try {
-            jdbcTemplate.update(updateSql,
-                    file.getPath(),
+            jdbcTemplate.update(updateFileSql,
                     file.getUid(),
                     file.getGuid(),
                     file.getSize(),
@@ -140,7 +139,8 @@ public class JdbcFileDao implements FileDao {
                     file.getLastStatusChange(),
                     file.getChunkSize(),
                     file.getParentDirId(),
-                    file.getSymLinkTargetId());
+                    file.getSymLinkTargetId(),
+                    file.getId());
         } catch (DataAccessException e) {
             throw new DaoException(e.getMessage(), e);
         }
@@ -149,7 +149,7 @@ public class JdbcFileDao implements FileDao {
     @Override
     public void deleteFile(Object id) throws DaoException {
         try {
-            jdbcTemplate.update(deleteSql, id);
+            jdbcTemplate.update(deleteFileSql, id);
         } catch (DataAccessException e) {
             throw new DaoException(e.getMessage(), e);
         }

@@ -8,6 +8,7 @@ package org.cloudraid.vfs.api;
 public class Chunk {
 
     private Object id;
+    private String uuid;
     private int index;
     private Object fileId;
 
@@ -17,6 +18,14 @@ public class Chunk {
 
     public void setId(Object id) {
         this.id = id;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 
     public int getIndex() {
